@@ -1,4 +1,7 @@
+.gdb_histoy
 *.o
 *.swp
 main
 testsuite
+libs/*.o
+test/*.o

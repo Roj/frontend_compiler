@@ -1,11 +1,11 @@
 CLIBS=-lcheck -lsubunit -pthread -pthread -lrt -lm -lsubunit
-CFLAGS=-std=c99 -O1 -pedantic -Werror -Wextra -Wall  
+CFLAGS=-std=c99 -O0 -pedantic -Werror -Wextra -Wall -g
 CC=gcc
 
-main: lexical.o
-	$(CC) $(CFLAGS) lexical.o $(CLIBS) -o main
+test: libs/lexical.o test/lexicaltest.o
+	$(CC) $(CFLAGS) $^ $(CLIBS) -o testsuite
 
 clean:
-	rm -f *.o main
+	rm -f libs/*.o test/*.o *.o main
 
 .PHONY: clean
