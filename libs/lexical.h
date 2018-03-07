@@ -29,4 +29,6 @@ typedef struct lexeme {
 } lexeme_t;
 
 lexeme_t* process_string(char* str);
+
+int get_error_count();
 #endif

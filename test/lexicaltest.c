@@ -51,6 +51,47 @@ START_TEST (lexeme_4number_octal_hex_test) {
 }
 END_TEST
 
+START_TEST (lexeme_hex_syntax_error_test) {
+	char* input = "0xDEADMAU5";
+	process_string(input);
+	ck_assert_int_gt(get_error_count(), 0);
+}
+END_TEST
+
+START_TEST (lexeme_identifier_test) {
+	char* input = "hola";
+	lexeme_t* lex = process_string(input);
+	ck_assert_msg(lex->type == IDENTIFIER, "Type is not identifier");
+	ck_assert_str_eq(lex->data.name, "hola");
+}
+END_TEST
+
+START_TEST (lexeme_2identifier_test) {
+	char* input = "abc def";
+	char* identifiers[2] = {"abc", "def"};
+	lexeme_t* lex = process_string(input);
+	int i = 0;
+	while (lex && lex->type != EOI) {
+		ck_assert_msg(lex->type == IDENTIFIER, "Type is not identifier");
+		ck_assert_str_eq(lex->data.name, identifiers[i++]);
+		lex = lex->next;
+	}
+}
+END_TEST
+
+START_TEST (lexeme_keyword_test) {
+	char* input = "abc if for";
+	lexeme_type_t types[3] = {IDENTIFIER, KW_IF, KW_FOR};
+	lexeme_t* lex = process_string(input);
+	int i = 0;
+	while (lex && lex->type != EOI) {
+		ck_assert_msg(lex->type == types[i++], "Type is not correct");
+		lex = lex->next;
+	}
+}
+END_TEST
+
+
 Suite* lexical_suite(void) {
 	Suite* s = suite_create("Lexical analyzer");
 	TCase* tc_core = tcase_create("Core");
@@ -58,6 +99,10 @@ Suite* lexical_suite(void) {
 	tcase_add_test(tc_core, lexeme_number_test);
 	tcase_add_test(tc_core, lexeme_2number_test);
 	tcase_add_test(tc_core, lexeme_4number_octal_hex_test);
+	tcase_add_test(tc_core, lexeme_hex_syntax_error_test);
+	tcase_add_test(tc_core, lexeme_identifier_test);
+	tcase_add_test(tc_core, lexeme_2identifier_test);
+	tcase_add_test(tc_core, lexeme_keyword_test);
 	suite_add_tcase(s, tc_core);
 	return s;
 }
