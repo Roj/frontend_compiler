@@ -11,10 +11,16 @@ typedef enum _lexeme_type_t {
 	IDENTIFIER,
 	OP_PLUS,
 	OP_MINUS,
+	OP_DIV,
+	OP_MULTIPLY,
 	KW_IF,
 	KW_FOR,
-	KW_BLOCK_START,
-	KW_BLOCK_END,
+	BLOCK_START,
+	BLOCK_END,
+	PARENS_START,
+	PARENS_END,
+	BRACKET_START,
+	BRACKET_END,
 	EOI
 } lexeme_type_t;
 

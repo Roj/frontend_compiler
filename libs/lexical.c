@@ -10,7 +10,7 @@ int get_error_count() {
 	return error_count;
 }
 
-void syntax_error(char* input, int errorpos, char* msg) {
+void lexical_error(char* input, int errorpos, char* msg) {
 	/*We want to find the first character of the line,
 	* so we can print an error message like this:
 	SYNTAX ERROR
@@ -39,7 +39,7 @@ void syntax_error(char* input, int errorpos, char* msg) {
 }
 
 bool is_white_space(char c) {
-	return c == ' ';
+	return c == ' ' || c == '\t' || c == '\n' || c == '\r';
 }
 
 //Transforms a possibly hex character to int.
@@ -63,6 +63,26 @@ bool is_alphanumeric(char c) {
 	return (
 		is_letter(c)
 		|| ('0' <= c && c <= '9')
+	);
+}
+
+bool is_operator(char c) {
+	return (
+		c == '+'
+		|| c == '-'
+		|| c == '/'
+		|| c == '*'
+	);
+}
+
+bool is_grouping(char c) {
+	return (
+		c == '{'
+		|| c == '}'
+		|| c == '('
+		|| c == ')'
+		|| c == '['
+		|| c == ']'
 	);
 }
 
@@ -95,7 +115,7 @@ int read_hex_oct_number(char* str, int i, lexeme_t* actual) {
 		while (is_alphanumeric(str[i])) {
 			int value = hexdig2dec(str[i]);
 			if (value == -1) {
-				syntax_error(str, i, "Character not in hex digit range");
+				lexical_error(str, i, "Character not in hex digit range");
 				return i;
 			}
 			actual->data.value = actual->data.value*16 + value;
@@ -105,7 +125,7 @@ int read_hex_oct_number(char* str, int i, lexeme_t* actual) {
 		while (is_alphanumeric(str[i])) {
 			int value = str[i] - '0';
 			if (value > 7) {
-				syntax_error(str, i, "Character not in oct digit range");
+				lexical_error(str, i, "Character not in oct digit range");
 				return i;
 			}
 			actual->data.value = actual->data.value*8 + value;
@@ -127,7 +147,7 @@ int read_identifier(char* str, int i, lexeme_t* actual) {
 	while (is_alphanumeric(str[i])) {
 		//Complexity is quite big rn but w/e, optimizations come later.
 		if (identlen == IDENT_STRING_SIZE) {
-			syntax_error(str, i, "Identifier name too long.");
+			lexical_error(str, i, "Identifier name too long.");
 			return i;
 		}
 		actual->data.name[identlen++] = str[i];
@@ -137,6 +157,66 @@ int read_identifier(char* str, int i, lexeme_t* actual) {
 	return i;
 }
 
+int read_div_or_comment(char* str, int i, lexeme_t* actual) {
+	i++;
+	//Check if it's a multi-line comment /*
+	if (str[i] == '*') {
+		bool found_star = false;
+		while (str[i]) {
+			if (found_star && str[i] == '/')
+				break;
+			found_star = false;
+			if (str[i] == '*')
+					found_star = true;
+			i++;
+		}
+		//Move the pointer to the next position after the comment
+		if (str[i]) i++;
+		//TODO: else, lexical error? could not find end comment
+	} else {
+		actual->type = OP_DIV;
+	}
+	return i;
+}
+int read_op_or_comment(char* str, int i, lexeme_t* actual) {
+	switch (str[i]) {
+		case '+':
+			actual->type = OP_PLUS;
+			return i+1;
+		case '-':
+			actual->type = OP_MINUS;
+			return i+1;
+		case '/':
+			return read_div_or_comment(str, i, actual);
+		case '*':
+			actual->type = OP_MULTIPLY;
+			return i+1;
+	}
+	return i;
+}
+int read_grouping(char* str, int i, lexeme_t* actual) {
+	switch (str[i]) {
+		case '(':
+			actual->type = PARENS_START;
+			break;
+		case ')':
+			actual->type = PARENS_END;
+			break;
+		case '{':
+			actual->type = BLOCK_START;
+			break;
+		case '}':
+			actual->type = BLOCK_END;
+			break;
+		case '[':
+			actual->type = BRACKET_START;
+			break;
+		case ']':
+			actual->type = BRACKET_END;
+			break;
+	}
+	return i+1;
+}
 //Decides if a lexeme-identifier is actually a keyword,
 //and changes the type if appropiate.
 void verify_change_keyword(lexeme_t* ident) {
@@ -150,7 +230,22 @@ void verify_change_keyword(lexeme_t* ident) {
 		}
 	}
 }
-
+//Creates a new lexeme and stores it on *lex,
+//keeping the list structure.
+void finish_lexeme(lexeme_t** lex) {
+	lexeme_t* new = new_lexeme();
+	(*lex)->next = new;
+	*lex = new;
+}
+void check_finish_previous_token(lexeme_t** actual) {
+	//Identifiers can actually be keywords, so let's check that.
+	if ((*actual)->type == IDENTIFIER) {
+		verify_change_keyword(*actual);
+		finish_lexeme(actual);
+	} else if ((*actual)->type == NUMBER) {
+		finish_lexeme(actual);
+	}
+}
 lexeme_t* process_string(char* str) {
 	lexeme_t* start = new_lexeme();
 	lexeme_t* actual = start;
@@ -166,17 +261,28 @@ lexeme_t* process_string(char* str) {
 			i = read_hex_oct_number(str, i, actual);
 		} else if (is_letter(str[i])) {
 			i = read_identifier(str, i, actual);
-		} else {
+		} else if (is_operator(str[i])) {
+			//Operators can close numbers and identifiers,
+			//so let's check it.
+			check_finish_previous_token(&actual);
+			i = read_op_or_comment(str, i, actual);
+			//Border case, since it may be a comment.
 			if (actual->type != UNDEF) {
-				//Identifiers can actually be keywords, so let's check that.
-				if (actual->type == IDENTIFIER)
-					verify_change_keyword(actual);
-				//Finish the previous token and create a new one.
-				lexeme_t* new = new_lexeme();
-				actual->next = new;
-				actual = new;
+				//We already know it's an operator, no need to wait for the
+				//next input to finish the lex.
+				finish_lexeme(&actual);
 			}
+		} else if (is_grouping(str[i])) {
+			check_finish_previous_token(&actual);
+			i = read_grouping(str, i, actual);
+			//Same idea.
+			finish_lexeme(&actual);
+		} else if (is_white_space(str[i])) {
+			//Whitespace. Let's check if we can close the prev token.
+			check_finish_previous_token(&actual);
 			i++;
+		} else {
+			lexical_error(str, i, "Unexpected token");	
 		}
 	}
 	if (actual->type == UNDEF) {

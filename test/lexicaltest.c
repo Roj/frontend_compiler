@@ -79,18 +79,65 @@ START_TEST (lexeme_2identifier_test) {
 }
 END_TEST
 
-START_TEST (lexeme_keyword_test) {
-	char* input = "abc if for";
-	lexeme_type_t types[3] = {IDENTIFIER, KW_IF, KW_FOR};
-	lexeme_t* lex = process_string(input);
+void check_types(lexeme_type_t types[], lexeme_t* lex) {
 	int i = 0;
 	while (lex && lex->type != EOI) {
 		ck_assert_msg(lex->type == types[i++], "Type is not correct");
 		lex = lex->next;
 	}
+	
+}
+
+START_TEST (lexeme_keyword_test) {
+	char* input = "abc if for";
+	lexeme_type_t types[3] = {IDENTIFIER, KW_IF, KW_FOR};
+	lexeme_t* lex = process_string(input);
+
+	check_types(types, lex);
 }
 END_TEST
 
+START_TEST (lexeme_expression_test) {
+	char* input = "123+ 192 - j/3";
+	lexeme_type_t types[7] = {
+		NUMBER, OP_PLUS, NUMBER, OP_MINUS, IDENTIFIER, OP_DIV, NUMBER
+	};
+	lexeme_t* lex = process_string(input);
+
+	check_types(types, lex);
+}
+END_TEST
+
+START_TEST (lexeme_grouping_test) {
+	char* input = "if (a[3]+9) {}";
+	//Indentation should reflect level of nesting.
+	lexeme_type_t types[] = {
+		KW_IF, 
+		PARENS_START,
+			IDENTIFIER, 
+			BRACKET_START, NUMBER, BRACKET_END,
+			OP_PLUS, NUMBER, 
+		PARENS_END, 
+		BLOCK_START, BLOCK_END
+	};
+	lexeme_t* lex = process_string(input);
+
+	check_types(types, lex);
+}
+END_TEST
+
+START_TEST (lexeme_comment_test) {
+	char* input = "a/3 /*divides by three*/";
+	lexeme_type_t types[3] = {
+		IDENTIFIER,
+		OP_DIV,
+		NUMBER
+	};
+	lexeme_t* lex = process_string(input);
+
+	check_types(types, lex);
+}
+END_TEST
 
 Suite* lexical_suite(void) {
 	Suite* s = suite_create("Lexical analyzer");
@@ -103,13 +150,15 @@ Suite* lexical_suite(void) {
 	tcase_add_test(tc_core, lexeme_identifier_test);
 	tcase_add_test(tc_core, lexeme_2identifier_test);
 	tcase_add_test(tc_core, lexeme_keyword_test);
+	tcase_add_test(tc_core, lexeme_expression_test);
+	tcase_add_test(tc_core, lexeme_grouping_test);
+	tcase_add_test(tc_core, lexeme_comment_test);
 	suite_add_tcase(s, tc_core);
 	return s;
 }
 
 
-int main() { 
-	//char* input = "1 + 2";
+int main() {
 	Suite* s = lexical_suite();
 	SRunner* sr = srunner_create(s);
 	srunner_run_all(sr, CK_NORMAL);
