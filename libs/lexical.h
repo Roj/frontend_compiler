@@ -4,6 +4,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdint.h>
+#include <stdbool.h>
 
 typedef enum _lexeme_type_t { 
 	UNDEF,
@@ -34,7 +35,7 @@ typedef struct lexeme {
 	struct lexeme* next;
 } lexeme_t;
 
-lexeme_t* process_string(char* str);
+lexeme_t* process_string(char* str, bool* unfinished_comment);
 
 int get_error_count();
 #endif

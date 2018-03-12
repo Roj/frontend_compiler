@@ -157,28 +157,36 @@ int read_identifier(char* str, int i, lexeme_t* actual) {
 	return i;
 }
 
-int read_div_or_comment(char* str, int i, lexeme_t* actual) {
+int find_comment_end(char* str, int i, bool* unfinished_comment) {
+	bool found_star = false;
+	while (str[i]) {
+		if (found_star && str[i] == '/')
+			break;
+		found_star = false;
+		if (str[i] == '*')
+				found_star = true;
+		i++;
+	}
+	//Move the pointer to the next position after the comment
+	if (str[i]) {
+		*unfinished_comment = false;
+		i++;
+	}
+
+	return i;
+}
+int read_div_or_comment(char* str, int i, lexeme_t* actual, bool* unfinished_comment) {
 	i++;
 	//Check if it's a multi-line comment /*
 	if (str[i] == '*') {
-		bool found_star = false;
-		while (str[i]) {
-			if (found_star && str[i] == '/')
-				break;
-			found_star = false;
-			if (str[i] == '*')
-					found_star = true;
-			i++;
-		}
-		//Move the pointer to the next position after the comment
-		if (str[i]) i++;
-		//TODO: else, lexical error? could not find end comment
+		*unfinished_comment = true;
+		i = find_comment_end(str, i, unfinished_comment);
 	} else {
 		actual->type = OP_DIV;
 	}
 	return i;
 }
-int read_op_or_comment(char* str, int i, lexeme_t* actual) {
+int read_op_or_comment(char* str, int i, lexeme_t* actual, bool* unfinished_comment) {
 	switch (str[i]) {
 		case '+':
 			actual->type = OP_PLUS;
@@ -187,7 +195,7 @@ int read_op_or_comment(char* str, int i, lexeme_t* actual) {
 			actual->type = OP_MINUS;
 			return i+1;
 		case '/':
-			return read_div_or_comment(str, i, actual);
+			return read_div_or_comment(str, i, actual, unfinished_comment);
 		case '*':
 			actual->type = OP_MULTIPLY;
 			return i+1;
@@ -246,7 +254,13 @@ void check_finish_previous_token(lexeme_t** actual) {
 		finish_lexeme(actual);
 	}
 }
-lexeme_t* process_string(char* str) {
+
+/*Processes a string, encoding it to internal representation
+ * lexemes. Holds a state in unfinished_comment, since this function
+ * can be called multiple times for the same program, and comments
+ * may span many function calls 
+ * */
+lexeme_t* process_string(char* str, bool* unfinished_comment) {
 	lexeme_t* start = new_lexeme();
 	lexeme_t* actual = start;
 	size_t i = 0;
@@ -255,7 +269,9 @@ lexeme_t* process_string(char* str) {
 	 * complies with being LL(1).
 	 */
 	while (str[i]) {
-		if ('1' <= str[i] && str[i] <= '9') {
+		if (*unfinished_comment) {
+			i = find_comment_end(str, i, unfinished_comment);
+		} else if ('1' <= str[i] && str[i] <= '9') {
 			i = read_dec_number(str, i, actual);
 		} else if ('0' == str[i]) {
 			i = read_hex_oct_number(str, i, actual);
@@ -265,7 +281,7 @@ lexeme_t* process_string(char* str) {
 			//Operators can close numbers and identifiers,
 			//so let's check it.
 			check_finish_previous_token(&actual);
-			i = read_op_or_comment(str, i, actual);
+			i = read_op_or_comment(str, i, actual, unfinished_comment);
 			//Border case, since it may be a comment.
 			if (actual->type != UNDEF) {
 				//We already know it's an operator, no need to wait for the
