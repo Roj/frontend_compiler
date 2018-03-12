@@ -37,5 +37,6 @@ typedef struct lexeme {
 
 lexeme_t* process_string(char* str, bool* unfinished_comment);
 
+void delete_lexemes(lexeme_t* start);
 int get_error_count();
 #endif

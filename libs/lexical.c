@@ -313,3 +313,13 @@ lexeme_t* process_string(char* str, bool* unfinished_comment) {
 	}
 	return start;
 }
+
+void delete_lexemes(lexeme_t* current) {
+	while (current) {
+		if (current->type == IDENTIFIER)
+			free(current->data.name);
+		lexeme_t* old = current;
+		current = current->next;
+		free(old);
+	}
+}
