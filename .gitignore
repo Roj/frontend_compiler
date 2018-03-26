@@ -1,7 +1,11 @@
 .gdb_history
+*.log
+*.txt
 *.o
 *.swp
+*.vim
 main
 testsuite
+lexical
 libs/*.o
 test/*.o
