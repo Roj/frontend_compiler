@@ -7,7 +7,7 @@ typedef struct lex_str_match {
 	char* name;
 } lex_str_map_t;
 
-lex_str_map_t lex_str_map[16] = {
+lex_str_map_t lex_str_map[23] = {
 	{UNDEF, "UNDEF"},
 	{NUMBER, "NUMBER"},
 	{IDENTIFIER, "IDENTIFIER"},
@@ -15,6 +15,13 @@ lex_str_map_t lex_str_map[16] = {
 	{OP_MINUS, "OP_MINUS"},
 	{OP_DIV, "OP_DIV"},
 	{OP_MULTIPLY, "OP_MULTIPLY"},
+	{OP_GT, "OP_GT"},
+	{OP_GTE, "OP_GTE"},
+	{OP_LT, "OP_LT"},
+	{OP_LTE, "OP_LTE"},
+	{OP_NOT, "OP_NOT"},
+	{OP_OR, "OP_OR"},
+	{OP_AND, "OP_AND"},
 	{KW_IF, "KW_IF"},
 	{KW_FOR, "KW_FOR"},
 	{BLOCK_START, "BLOCK_START"},
@@ -27,7 +34,7 @@ lex_str_map_t lex_str_map[16] = {
 };
 
 char* lex2str(lexeme_t* lex) {
-	for(int i = 0; i < 16; i++) {
+	for(int i = 0; i < 23; i++) {
 		if (lex_str_map[i].type == lex->type)
 			return lex_str_map[i].name;
 	}

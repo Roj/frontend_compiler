@@ -72,6 +72,11 @@ bool is_operator(char c) {
 		|| c == '-'
 		|| c == '/'
 		|| c == '*'
+		|| c == '<'
+		|| c == '>'
+		|| c == '&'
+		|| c == '|'
+		|| c == '='
 	);
 }
 
@@ -101,6 +106,8 @@ int read_dec_number(char* str, int i, lexeme_t* actual) {
 		actual->data.value = actual->data.value*10 + (str[i] - '0');
 		i++;
 	}
+	if (is_letter(str[i]))
+		lexical_error(str, i, "Unexpected letter");
 	return i;
 }
 
@@ -193,6 +200,40 @@ int read_op_or_comment(char* str, int i, lexeme_t* actual, bool* unfinished_comm
 			return i+1;
 		case '-':
 			actual->type = OP_MINUS;
+			return i+1;
+		case '>':
+			actual->type = OP_GT;
+			if (str[++i] == '=') {
+				actual->type = OP_GTE;
+				i++;
+			}
+			return i;
+		case '<':
+			actual->type = OP_LT;
+			if (str[++i] == '=') {
+				actual->type = OP_LTE;
+				i++;
+			}
+			return i;
+		case '=':
+			actual->type = ASSIGN;
+			if (str[++i] == '=') {
+				actual->type = OP_EQUALS;
+				i++;
+			}
+			return i;
+		case '!':
+			actual->type = OP_NOT;
+			return i+1;
+		case '&':
+			actual->type = OP_AND;
+			if (str[++i] != '&')
+				lexical_error(str, i, "Expected &");
+			return i+1;
+		case '|':
+			actual->type = OP_OR;
+			if (str[++i] != '|')
+				lexical_error(str, i, "Expected |");
 			return i+1;
 		case '/':
 			return read_div_or_comment(str, i, actual, unfinished_comment);

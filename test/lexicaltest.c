@@ -85,6 +85,15 @@ START_TEST (lexeme_2identifier_test) {
 }
 END_TEST
 
+START_TEST (lexeme_unexpected_identifier_test) {
+	char* input = "541oops";
+	bool unfinished_comment = false;
+	process_string(input, &unfinished_comment);
+	ck_assert_msg(get_error_count() > 0, "Did not get a lexical error");
+
+}
+END_TEST
+
 void check_types(lexeme_type_t types[], lexeme_t* lex) {
 	int i = 0;
 	while (lex && lex->type != EOI) {
@@ -105,9 +114,22 @@ START_TEST (lexeme_keyword_test) {
 END_TEST
 
 START_TEST (lexeme_expression_test) {
-	char* input = "123+ 192 - j/3";
-	lexeme_type_t types[7] = {
-		NUMBER, OP_PLUS, NUMBER, OP_MINUS, IDENTIFIER, OP_DIV, NUMBER
+	char* input = "123+ 192 - j/3 == 9";
+	lexeme_type_t types[9] = {
+		NUMBER, OP_PLUS, NUMBER, OP_MINUS, IDENTIFIER, OP_DIV, NUMBER,
+		OP_EQUALS, NUMBER
+	};
+	bool unfinished_comment = false;
+	lexeme_t* lex = process_string(input, &unfinished_comment);
+
+	check_types(types, lex);
+}
+END_TEST
+
+START_TEST (lexeme_assign_test) {
+	char* input = "a = 3 == 9";
+	lexeme_type_t types[5] = {
+		IDENTIFIER, ASSIGN, NUMBER, OP_EQUALS, NUMBER
 	};
 	bool unfinished_comment = false;
 	lexeme_t* lex = process_string(input, &unfinished_comment);
@@ -169,11 +191,13 @@ Suite* lexical_suite(void) {
 	tcase_add_test(tc_core, lexeme_hex_syntax_error_test);
 	tcase_add_test(tc_core, lexeme_identifier_test);
 	tcase_add_test(tc_core, lexeme_2identifier_test);
+	tcase_add_test(tc_core, lexeme_unexpected_identifier_test);
 	tcase_add_test(tc_core, lexeme_keyword_test);
 	tcase_add_test(tc_core, lexeme_expression_test);
 	tcase_add_test(tc_core, lexeme_grouping_test);
 	tcase_add_test(tc_core, lexeme_comment_test);
 	tcase_add_test(tc_core, lexeme_unfinished_comment_test);
+	tcase_add_test(tc_core, lexeme_assign_test);
 	suite_add_tcase(s, tc_core);
 	return s;
 }
@@ -182,6 +206,7 @@ Suite* lexical_suite(void) {
 int main() {
 	Suite* s = lexical_suite();
 	SRunner* sr = srunner_create(s);
+	srunner_set_log (sr, "test.log");
 	srunner_run_all(sr, CK_NORMAL);
 	int number_failed = srunner_ntests_failed(sr);
 	srunner_free(sr);
