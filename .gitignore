@@ -8,6 +8,8 @@
 parser
 main
 testsuite
+testlexical
+testparser
 lexical
 libs/*.o
 test/*.o

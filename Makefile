@@ -2,7 +2,7 @@ CLIBS=-lcheck -lsubunit -pthread -pthread -lrt -lm -lsubunit
 CFLAGS=-std=c99 -O0 -pedantic -Werror -Wextra -Wall -g -Q
 CC=gcc
 
-all: test lexical
+all: test lexical testlexical testparser
 
 lexical: libs/lexical.o lexical.o
 	$(CC) $(CFLAGS) $^ $(CLIBS) -o lexical
@@ -10,8 +10,11 @@ lexical: libs/lexical.o lexical.o
 parser: libs/lexical.o libs/parser.o parser.o
 	$(CC) $(CFLAGS) $^ $(CLIBS) -o parser
 	
-test:  libs/lexical.o test/lexicaltest.o
-	$(CC) $(CFLAGS) $^ $(CLIBS) -o testsuite
+testlexical:  libs/lexical.o test/lexicaltest.o
+	$(CC) $(CFLAGS) $^ $(CLIBS) -o testlexical
+
+testparser: libs/lexical.o libs/parser.o test/parsertest.o
+	$(CC) $(CFLAGS) $^ $(CLIBS) -o testparser
 
 clean:
 	rm -f libs/*.o test/*.o *.o main
