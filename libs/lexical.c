@@ -4,6 +4,35 @@
 
 #define IDENT_STRING_SIZE 20 //hardcoded for now
 
+lex_str_map_t lex_str_map[26] = {
+	{UNDEF, "UNDEF"},
+	{NUMBER, "NUMBER"},
+	{IDENTIFIER, "IDENTIFIER"},
+	{OP_PLUS, "OP_PLUS"},
+	{OP_MINUS, "OP_MINUS"},
+	{OP_DIV, "OP_DIV"},
+	{OP_MULTIPLY, "OP_MULTIPLY"},
+	{OP_EQUALS, "OP_EQUALS"},
+	{ASSIGN, "ASSIGN"},
+	{OP_GT, "OP_GT"},
+	{OP_GTE, "OP_GTE"},
+	{OP_LT, "OP_LT"},
+	{OP_LTE, "OP_LTE"},
+	{OP_NOT, "OP_NOT"},
+	{OP_OR, "OP_OR"},
+	{OP_AND, "OP_AND"},
+	{KW_IF, "KW_IF"},
+	{KW_FOR, "KW_FOR"},
+	{BLOCK_START, "BLOCK_START"},
+	{BLOCK_END, "BLOCK_END"},
+	{PARENS_START, "PARENS_START"},
+	{PARENS_END, "PARENS_END"},
+	{BRACKET_START, "BRACKET_START"},
+	{BRACKET_END, "BRACKET_END"},
+	{STM_END, "STM_END"},
+	{EOI, "EOI"}
+};
+
 static int error_count = 0;
 
 int get_error_count() {
@@ -269,8 +298,8 @@ int read_grouping(char* str, int i, lexeme_t* actual) {
 //Decides if a lexeme-identifier is actually a keyword,
 //and changes the type if appropiate.
 void verify_change_keyword(lexeme_t* ident) {
-	char* keywords_str[2] = {"if","for"};
-	lexeme_type_t keywords[2] = {KW_IF, KW_FOR};
+	char* keywords_str[3] = {"if","for","else"};
+	lexeme_type_t keywords[3] = {KW_IF, KW_FOR, KW_ELSE};
 	for (int i = 0; i < 2; i++) {
 		if (strcmp(keywords_str[i], ident->data.name) == 0) {
 			free(ident->data.name);
@@ -338,6 +367,11 @@ lexeme_t* process_string(char* str, bool* unfinished_comment) {
 			//Whitespace. Let's check if we can close the prev token.
 			check_finish_previous_token(&actual);
 			i++;
+		} else if (str[i] == ';') {
+			check_finish_previous_token(&actual);
+			actual->type = STM_END;
+			finish_lexeme(&actual);
+			i++;
 		} else {
 			lexical_error(str, i, "Unexpected token");	
 		}
@@ -364,3 +398,14 @@ void delete_lexemes(lexeme_t* current) {
 		free(old);
 	}
 }
+
+
+char* lex2str(lexeme_t* lex) {
+	for(int i = 0; i < 26; i++) {
+		if (lex_str_map[i].type == lex->type)
+			return lex_str_map[i].name;
+	}
+	printf("Not found for type %d\n", lex->type);
+	return lex_str_map[0].name;
+}
+

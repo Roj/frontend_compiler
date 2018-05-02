@@ -3,9 +3,14 @@ CFLAGS=-std=c99 -O0 -pedantic -Werror -Wextra -Wall -g -Q
 CC=gcc
 
 all: test lexical
-lexical: libs/*.o lexical.o
+
+lexical: libs/lexical.o lexical.o
 	$(CC) $(CFLAGS) $^ $(CLIBS) -o lexical
-test: libs/*.o test/*.o
+
+parser: libs/lexical.o libs/parser.o parser.o
+	$(CC) $(CFLAGS) $^ $(CLIBS) -o parser
+	
+test:  libs/lexical.o test/lexicaltest.o
 	$(CC) $(CFLAGS) $^ $(CLIBS) -o testsuite
 
 clean:

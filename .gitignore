@@ -4,6 +4,8 @@
 *.o
 *.swp
 *.vim
+*.pdf
+parser
 main
 testsuite
 lexical
