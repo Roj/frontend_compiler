@@ -46,12 +46,9 @@ typedef struct lexeme {
 	struct lexeme* next;
 } lexeme_t;
 
-typedef struct lex_str_match {
-	lexeme_type_t type;
-	char* name;
-} lex_str_map_t;
-
 char* lex2str(lexeme_t* lex);
+char* lextype2str(lexeme_type_t type);
+
 lexeme_t* process_string(char* str, bool* unfinished_comment);
 
 void delete_lexemes(lexeme_t* start);

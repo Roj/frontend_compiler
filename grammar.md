@@ -23,6 +23,9 @@ Expression -> Expression >= Term
 Expression -> Expression <= Term
 Expression -> Expression > Term
 Expression -> Expression < Term
+Expression -> ! Expression
+Expression -> Expression && Term
+Expression -> Expression || Term
 Expression -> Term
 Term -> Term * Factor
 Term -> Term / Factor
@@ -41,11 +44,14 @@ ExpressionPrime -> > Term ExpressionPrime
 ExpressionPrime -> < Term ExpressionPrime
 ExpressionPrime -> + Term ExpressionPrime
 ExpressionPrime -> - Term ExpressionPrime
+ExpressionPrime -> && Term ExpressionPrime
+ExpressionPrime -> || Term ExpressionPrime
 ExpressionPrime -> epsilon
 Term -> Factor TermPrime
 TermPrime -> * Factor TermPrime
 TermPrime -> / Factor TermPrime
 TermPrime -> epsilon
+Factor -> ! Factor
 Factor -> IDENTIFIER
 Factor -> (Expression)
 ```

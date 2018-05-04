@@ -97,7 +97,10 @@ END_TEST
 void check_types(lexeme_type_t types[], lexeme_t* lex) {
 	int i = 0;
 	while (lex && lex->type != EOI) {
-		ck_assert_msg(lex->type == types[i++], "Type is not correct");
+		char msg[500];
+		sprintf(msg, "Type at i=%d is not correct: expected %s, got %s",
+			i, lextype2str(types[i]), lex2str(lex));
+		ck_assert_msg(lex->type == types[i++], msg);
 		lex = lex->next;
 	}
 	
@@ -181,6 +184,26 @@ START_TEST (lexeme_unfinished_comment_test) {
 }
 END_TEST
 
+START_TEST (lexeme_not_test) {
+	char* input = "a = !b";
+	lexeme_type_t types[4] = {IDENTIFIER, ASSIGN, OP_NOT, IDENTIFIER};
+	bool unfinished_comment = false;
+	lexeme_t* lex = process_string(input, &unfinished_comment);
+
+	check_types(types, lex);
+}
+END_TEST
+
+START_TEST (lexeme_boolean_op_test) {
+	char* input = "!(b&&a) || 0x0";
+	lexeme_type_t types[8] = {OP_NOT, PARENS_START, IDENTIFIER, OP_AND, IDENTIFIER, PARENS_END, OP_OR, NUMBER};
+	bool unfinished_comment = false;
+	lexeme_t* lex = process_string(input, &unfinished_comment);
+
+	check_types(types, lex);
+}
+END_TEST
+
 Suite* lexical_suite(void) {
 	Suite* s = suite_create("Lexical analyzer");
 	TCase* tc_core = tcase_create("Core");
@@ -198,6 +221,8 @@ Suite* lexical_suite(void) {
 	tcase_add_test(tc_core, lexeme_comment_test);
 	tcase_add_test(tc_core, lexeme_unfinished_comment_test);
 	tcase_add_test(tc_core, lexeme_assign_test);
+	tcase_add_test(tc_core, lexeme_not_test);
+	tcase_add_test(tc_core, lexeme_boolean_op_test);
 	suite_add_tcase(s, tc_core);
 	return s;
 }

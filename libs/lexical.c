@@ -4,37 +4,37 @@
 
 #define IDENT_STRING_SIZE 20 //hardcoded for now
 
-lex_str_map_t lex_str_map[26] = {
-	{UNDEF, "UNDEF"},
-	{NUMBER, "NUMBER"},
-	{IDENTIFIER, "IDENTIFIER"},
-	{OP_PLUS, "OP_PLUS"},
-	{OP_MINUS, "OP_MINUS"},
-	{OP_DIV, "OP_DIV"},
-	{OP_MULTIPLY, "OP_MULTIPLY"},
-	{OP_EQUALS, "OP_EQUALS"},
-	{ASSIGN, "ASSIGN"},
-	{OP_GT, "OP_GT"},
-	{OP_GTE, "OP_GTE"},
-	{OP_LT, "OP_LT"},
-	{OP_LTE, "OP_LTE"},
-	{OP_NOT, "OP_NOT"},
-	{OP_OR, "OP_OR"},
-	{OP_AND, "OP_AND"},
-	{KW_IF, "KW_IF"},
-	{KW_FOR, "KW_FOR"},
-	{BLOCK_START, "BLOCK_START"},
-	{BLOCK_END, "BLOCK_END"},
-	{PARENS_START, "PARENS_START"},
-	{PARENS_END, "PARENS_END"},
-	{BRACKET_START, "BRACKET_START"},
-	{BRACKET_END, "BRACKET_END"},
-	{STM_END, "STM_END"},
-	{EOI, "EOI"}
-};
-
 static int error_count = 0;
 
+char* lex_str_map[27] = {
+	"UNDEF",
+	"NUMBER",
+	"IDENTIFIER",
+	"OP_PLUS",
+	"OP_MINUS",
+	"OP_DIV",
+	"OP_MULTIPLY",
+	"OP_GT",
+	"OP_LT",
+	"OP_GTE",
+	"OP_LTE",
+	"OP_NOT",
+	"OP_AND",
+	"OP_OR",
+	"OP_EQUALS",
+	"ASSIGN",
+	"KW_IF",
+	"KW_ELSE",
+	"KW_FOR",
+	"BLOCK_START",
+	"BLOCK_END",
+	"PARENS_START",
+	"PARENS_END",
+	"BRACKET_START",
+	"BRACKET_END",
+	"STM_END",
+	"EOI"
+};
 int get_error_count() {
 	return error_count;
 }
@@ -106,6 +106,7 @@ bool is_operator(char c) {
 		|| c == '&'
 		|| c == '|'
 		|| c == '='
+		|| c == '!'
 	);
 }
 
@@ -374,6 +375,7 @@ lexeme_t* process_string(char* str, bool* unfinished_comment) {
 			i++;
 		} else {
 			lexical_error(str, i, "Unexpected token");	
+			i++;
 		}
 	}
 	if (actual->type == UNDEF) {
@@ -399,13 +401,13 @@ void delete_lexemes(lexeme_t* current) {
 	}
 }
 
-
 char* lex2str(lexeme_t* lex) {
-	for(int i = 0; i < 26; i++) {
-		if (lex_str_map[i].type == lex->type)
-			return lex_str_map[i].name;
-	}
+	if (lex->type < 27)
+		return lex_str_map[lex->type];
 	printf("Not found for type %d\n", lex->type);
-	return lex_str_map[0].name;
+	return lex_str_map[0];
 }
 
+char* lextype2str(lexeme_type_t type) {
+	return lex_str_map[type];
+}

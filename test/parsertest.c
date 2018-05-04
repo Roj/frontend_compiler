@@ -2,13 +2,12 @@
 #include "../libs/parser.h"
 #include <check.h>
 
-//Tests that assert whether the structures work
-//as expected.
 START_TEST (parser_assignment_test) {
 	char* input = "a = 3;";
 	bool unfinished_comment = false;
 	lexeme_t* lex = process_string(input, &unfinished_comment);
-	ck_assert_msg(parse(lex), "Simple assignment is not in grammar");
+	ck_assert_msg(parse_unit(lex, Grouping), 
+		"Simple assignment is not in grammar");
 }
 END_TEST
 
@@ -16,39 +15,53 @@ START_TEST (parser_assignment_nosemic_test) {
 	char* input = "a = 3";
 	bool unfinished_comment = false;
 	lexeme_t* lex = process_string(input, &unfinished_comment);
-	ck_assert_msg(!parse(lex), "Grammar does not detect missing semicolon");
+	ck_assert_msg(!parse_unit(lex, Grouping), 
+		"Grammar does not detect missing semicolon in statement a=3");
 }
 END_TEST
 
 START_TEST (parser_assignment_simple_expr_test) {
-	char* input = "a = 3+3;";
+	char* input = "a = 3+3";
 	bool unfinished_comment = false;
 	lexeme_t* lex = process_string(input, &unfinished_comment);
-	ck_assert_msg(parse(lex), "Grammar does not support assignment of expr");
+	ck_assert_msg(parse_unit(lex, Statement),
+		"Grammar does not support assignment of expr as statement");
 }
 END_TEST
 
-START_TEST (parser_assignment_compound_expr_test) {
-	char* input = "a = 3+3+(4*2);";
+START_TEST (parser_compound_expr_test) {
+	char* input = "3+3+(4*2)";
 	bool unfinished_comment = false;
 	lexeme_t* lex = process_string(input, &unfinished_comment);
-	ck_assert_msg(parse(lex), "Grammar does not support compound expressions");
+	ck_assert_msg(parse_unit(lex, Expression), 
+		"Grammar does not support compound expressions");
 }
 END_TEST
 
-START_TEST (parser_assignment_complete_compound_expr_test) {
-	char* input = "a = 3+3+(4*2)/2-(3+2);";
+START_TEST (parser_complete_compound_expr_test) {
+	char* input = "3+3+(4*2)/2-(3+2)";
 	bool unfinished_comment = false;
 	lexeme_t* lex = process_string(input, &unfinished_comment);
-	ck_assert_msg(parse(lex), "Grammar does not support harder comp. expressions");
+	ck_assert_msg(parse_unit(lex, Expression),
+		"Grammar does not support harder comp. expressions");
 }
 END_TEST
 
-START_TEST (parser_assignment_boolean_test) {
-	char* input = "a = 1>2;";
+START_TEST (parser_boolean_test) {
+	char* input = "1>2";
 	bool unfinished_comment = false;
 	lexeme_t* lex = process_string(input, &unfinished_comment);
-	ck_assert_msg(parse(lex), "Grammar does not support boolean expressions");
+	ck_assert_msg(parse_unit(lex, Expression),
+		"Grammar does not support boolean expressions");
+}
+END_TEST
+
+START_TEST (parser_logical_ops_test) {
+	char* input = "!(a&&b)||c + !k - !b";
+	bool unfinished_comment = false;
+	lexeme_t* lex = process_string(input, &unfinished_comment);
+	ck_assert_msg(parse_unit(lex, Expression),
+		"Grammar does not support boolean expressions");
 }
 END_TEST
 
@@ -59,13 +72,13 @@ Suite* parser_suite(void) {
 	tcase_add_test(tc_core, parser_assignment_test);
 	tcase_add_test(tc_core, parser_assignment_nosemic_test);
 	tcase_add_test(tc_core, parser_assignment_simple_expr_test);
-	tcase_add_test(tc_core, parser_assignment_compound_expr_test);
-	tcase_add_test(tc_core, parser_assignment_complete_compound_expr_test);
-	tcase_add_test(tc_core, parser_assignment_boolean_test);
+	tcase_add_test(tc_core, parser_compound_expr_test);
+	tcase_add_test(tc_core, parser_complete_compound_expr_test);
+	tcase_add_test(tc_core, parser_boolean_test);
+	tcase_add_test(tc_core, parser_logical_ops_test);
 	suite_add_tcase(suite, tc_core);
 	return suite;
 }
-
 
 int main() {
 	Suite* suite = parser_suite();

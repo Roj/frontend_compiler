@@ -1,5 +1,5 @@
 CLIBS=-lcheck -lsubunit -pthread -pthread -lrt -lm -lsubunit
-CFLAGS=-std=c99 -O0 -pedantic -Werror -Wextra -Wall -g -Q
+CFLAGS=-std=c99 -O0 -pedantic -Werror -Wextra -Wall -g #-Q
 CC=gcc
 
 all: test lexical testlexical testparser

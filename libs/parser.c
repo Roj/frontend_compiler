@@ -1,20 +1,22 @@
 #include "parser.h"
 #include <stdio.h>
+#include <stdarg.h>
 static lexeme_t* lex;
 static int syntax_errors = 0;
-//Forward declarations.
-void Grouping();
-void Statement();
-void Block();
-void Else();
-void Expression();
-void ExpressionPrime();
-void Term();
-void TermPrime();
-void Factor();
 
-void syntax_error() {
-	printf("Unexpected lexeme of type %s\n", lex2str(lex));
+void syntax_error(int num_options, ...) {
+	va_list arguments; 
+	va_start (arguments, num_options); 
+	printf("Unexpected lexeme of type %s, expected ", lex2str(lex));
+	for (int i = 0; i < num_options; i++) {
+		printf("%s", lextype2str(va_arg(arguments, lexeme_type_t)));
+		if (i < num_options-2)
+			printf(", ");
+		else if (i == num_options-2)
+			printf(", or ");
+	}
+	printf(".\n");
+	va_end(arguments);
 	syntax_errors++;
 }
 void next_symb() {
@@ -24,13 +26,20 @@ void match(lexeme_type_t type) {
 	if (lex->type == type) {
 		next_symb();
 	} else {
-		syntax_error();
+		syntax_error(1, type);
 	}
 }
 //Returns true if the input was correctly processed
 bool parse(lexeme_t* first_symbol) {
+	syntax_errors = 0;
 	lex = first_symbol;
 	Grouping();
+	return lex->type == EOI && syntax_errors == 0;
+}
+bool parse_unit(lexeme_t* fs, void(*Nonterminal)(void)) {
+	syntax_errors = 0;
+	lex = fs;
+	Nonterminal();
 	return lex->type == EOI && syntax_errors == 0;
 }
 void Grouping() {
@@ -74,7 +83,7 @@ void Statement() {
 			Expression();
 			break;
 		default:
-			syntax_error();
+			syntax_error(1, IDENTIFIER);
 	}
 }
 void Else() {
@@ -99,11 +108,12 @@ void Block() {
 			Statement();
 			break;
 		default:
-			syntax_error();
+			syntax_error(2, BLOCK_START, IDENTIFIER);
 	}
 }
 void Expression() {
 	switch (lex->type) {
+		case OP_NOT:
 		case NUMBER:
 		case IDENTIFIER:
 		case PARENS_START:
@@ -111,7 +121,7 @@ void Expression() {
 			ExpressionPrime();
 			break;
 		default:
-			syntax_error();
+			syntax_error(3, NUMBER, IDENTIFIER, PARENS_START);
 	}
 }
 void ExpressionPrime() {
@@ -146,6 +156,16 @@ void ExpressionPrime() {
 			Term();
 			ExpressionPrime();
 			break;
+		case OP_AND:
+			match(OP_AND);
+			Term();
+			ExpressionPrime();
+			break;
+		case OP_OR:
+			match(OP_OR);
+			Term();
+			ExpressionPrime();
+			break;
 		default:
 			return;
 		//No default error: ExpressionPrime -> epsilon
@@ -153,6 +173,7 @@ void ExpressionPrime() {
 }
 void Term() {
 	switch (lex->type) {
+		case OP_NOT:
 		case IDENTIFIER:
 		case NUMBER:
 		case PARENS_START:
@@ -160,7 +181,7 @@ void Term() {
 			TermPrime();
 			break;
 		default:
-			syntax_error();
+			syntax_error(3, IDENTIFIER, NUMBER, PARENS_START);
 	}
 }
 void TermPrime() {
@@ -182,6 +203,10 @@ void TermPrime() {
 }
 void Factor() {
 	switch (lex->type) {
+		case OP_NOT:
+			match(OP_NOT);
+			Factor();
+			break;
 		case IDENTIFIER:
 			match(IDENTIFIER);
 			break;
@@ -194,6 +219,6 @@ void Factor() {
 			match(PARENS_END);
 			break;
 		default:
-			syntax_error();
+			syntax_error(3, IDENTIFIER, NUMBER, PARENS_START);
 	}
 }
