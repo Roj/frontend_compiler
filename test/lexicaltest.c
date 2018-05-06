@@ -143,6 +143,19 @@ START_TEST (lexeme_assign_test) {
 }
 END_TEST
 
+START_TEST (lexeme_type_assign_test) {
+	char* input = "a: integer; a := 3";
+	lexeme_type_t types[7] = {
+		IDENTIFIER, ASSIGN_TYPE, TYPE_INTEGER, STM_END,
+		IDENTIFIER, ASSIGN, NUMBER
+	};
+	bool unfinished_comment = false;
+	lexeme_t* lex = process_string(input, &unfinished_comment);
+
+	check_types(types, lex);
+}
+END_TEST
+
 START_TEST (lexeme_grouping_test) {
 	char* input = "if a[3]+9 then begin end";
 	//Indentation should reflect level of nesting.
@@ -197,7 +210,8 @@ END_TEST
 
 START_TEST (lexeme_boolean_op_test) {
 	char* input = "not (b and a) or 0x0";
-	lexeme_type_t types[8] = {OP_NOT, PARENS_START, IDENTIFIER, OP_AND, IDENTIFIER, PARENS_END, OP_OR, NUMBER};
+	lexeme_type_t types[8] = {OP_NOT, PARENS_START, IDENTIFIER, OP_AND,
+		IDENTIFIER, PARENS_END, OP_OR, NUMBER};
 	bool unfinished_comment = false;
 	lexeme_t* lex = process_string(input, &unfinished_comment);
 
@@ -205,6 +219,40 @@ START_TEST (lexeme_boolean_op_test) {
 }
 END_TEST
 
+START_TEST (lexeme_neq_test) {
+	char* input = "(a<3 <> b>4) = (a<=4 <> 5)";
+	lexeme_type_t types[17] = {
+		PARENS_START, 
+			IDENTIFIER, OP_LT, NUMBER, 
+			OP_NEQUALS, 
+			IDENTIFIER, OP_GT, NUMBER,
+		PARENS_END,
+		OP_EQUALS,
+		PARENS_START,
+			IDENTIFIER, OP_LTE, NUMBER, 
+			OP_NEQUALS, 
+			NUMBER,
+		PARENS_END
+	};
+	bool unfinished_comment = false;
+	lexeme_t* lex = process_string(input, &unfinished_comment);
+
+	check_types(types, lex);
+}
+END_TEST
+
+START_TEST (lexeme_program_structure_test) {
+	char* input = "program abc; begin end.";
+	lexeme_type_t types[6] = {
+		KW_PROGRAM, IDENTIFIER, STM_END,
+		BLOCK_START, BLOCK_END, PROGRAM_END
+	};
+	bool unfinished_comment = false;
+	lexeme_t* lex = process_string(input, &unfinished_comment);
+
+	check_types(types, lex);
+}
+END_TEST
 Suite* lexical_suite(void) {
 	Suite* s = suite_create("Lexical analyzer");
 	TCase* tc_core = tcase_create("Core");
@@ -222,8 +270,11 @@ Suite* lexical_suite(void) {
 	tcase_add_test(tc_core, lexeme_comment_test);
 	tcase_add_test(tc_core, lexeme_unfinished_comment_test);
 	tcase_add_test(tc_core, lexeme_assign_test);
+	tcase_add_test(tc_core, lexeme_type_assign_test);
 	tcase_add_test(tc_core, lexeme_not_test);
 	tcase_add_test(tc_core, lexeme_boolean_op_test);
+	tcase_add_test(tc_core, lexeme_neq_test);
+	tcase_add_test(tc_core, lexeme_program_structure_test);
 	suite_add_tcase(s, tc_core);
 	return s;
 }
