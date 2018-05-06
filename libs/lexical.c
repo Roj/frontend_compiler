@@ -300,13 +300,13 @@ int read_grouping(char* str, int i, lexeme_t* actual) {
 //Decides if a lexeme-identifier is actually a keyword,
 //and changes the type if appropiate.
 void verify_change_keyword(lexeme_t* ident) {
-	char* keywords_str[14] = {"if","for","else", "to", "downto", 
+	char* keywords_str[15] = {"if","for", "then", "else", "to", "downto,
 		"do", "begin", "end", "var", "integer", "program", 
 		"not", "and", "or"};
-	lexeme_type_t keywords[14] = {KW_IF, KW_FOR, KW_ELSE, KW_TO, 
+	lexeme_type_t keywords[15] = {KW_IF, KW_FOR, KW_THEN, KW_ELSE, KW_TO,
 		KW_DOWNTO, KW_DO, BLOCK_START, BLOCK_END, KW_VAR, TYPE_INTEGER,
 		KW_PROGRAM, OP_NOT, OP_AND, OP_OR};
-	for (int i = 0; i < 14; i++) {
+	for (int i = 0; i < 15; i++) {
 		if (strcmp(keywords_str[i], ident->data.name) == 0) {
 			free(ident->data.name);
 			ident->type = keywords[i];
