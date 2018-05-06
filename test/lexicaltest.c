@@ -40,7 +40,7 @@ START_TEST (lexeme_2number_test) {
 
 END_TEST
 START_TEST (lexeme_4number_octal_hex_test) {
-	char* input = "0312 123 0XABcDeF 0 0X1dead2";
+	char* input = "&0312 123 $ABcDeF 0 $1dead2";
 	int numbers[5] = {0312, 123, 0xABcDeF, 0, 0X1dead2};
 	bool unfinished_comment = false;
 	lexeme_t* current = process_string(input, &unfinished_comment);
@@ -210,7 +210,7 @@ START_TEST (lexeme_not_test) {
 END_TEST
 
 START_TEST (lexeme_boolean_op_test) {
-	char* input = "not (b and a) or 0x0";
+	char* input = "not (b and a) or $0";
 	lexeme_type_t types[8] = {OP_NOT, PARENS_START, IDENTIFIER, OP_AND,
 		IDENTIFIER, PARENS_END, OP_OR, NUMBER};
 	bool unfinished_comment = false;

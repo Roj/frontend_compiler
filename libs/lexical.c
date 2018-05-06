@@ -120,14 +120,14 @@ bool is_operator(char c) {
 		|| c == '*'
 		|| c == '<'
 		|| c == '>'
-		|| c == '&'
-		|| c == '|'
 		|| c == '='
 		|| c == '!'
 		|| c == ':'
 		|| c == '{'
 		|| c == ','
 		|| c == '.'
+		|| c == '$'
+		|| c == '&'
 	);
 }
 
@@ -160,35 +160,30 @@ int read_dec_number(char* str, int i, lexeme_t* actual) {
 	return i;
 }
 
-//Reads a oct/hex number, storing it in the lexeme_t*.
-//Returns the position of the first non-numeric character
-//in the input.
-int read_hex_oct_number(char* str, int i, lexeme_t* actual) {
-	actual->type = NUMBER;
-	i++;
-	if (str[i] == 'x' || str[i] == 'X') {
+//Reads a hex number. Returns position of first non-alphanumeric character.
+int read_hex_number(char* str, int i, lexeme_t* actual) {
+	while (is_alphanumeric(str[i])) {
+		int value = hexdig2dec(str[i]);
+		if (value == -1) {
+			lexical_error(str, i, "Character not in hex digit range");
+			return i;
+		}
+		actual->data.value = actual->data.value*16 + value;
 		i++;
-		while (is_alphanumeric(str[i])) {
-			int value = hexdig2dec(str[i]);
-			if (value == -1) {
-				lexical_error(str, i, "Character not in hex digit range");
-				return i;
-			}
-			actual->data.value = actual->data.value*16 + value;
-			i++;
-		}
-	} else {
-		while (is_alphanumeric(str[i])) {
-			int value = str[i] - '0';
-			if (value > 7) {
-				lexical_error(str, i, "Character not in oct digit range");
-				return i;
-			}
-			actual->data.value = actual->data.value*8 + value;
-			i++;
-		}
 	}
-	//Third case implicit: it was just a zero
+	return i;
+}
+//Reads an oct number starting with 0. Returns position of first non-alphnum.
+int read_oct_number(char* str, int i, lexeme_t* actual) {
+	while (is_alphanumeric(str[i])) {
+		int value = str[i] - '0';
+		if (value > 7) {
+			lexical_error(str, i, "Character not in oct digit range");
+			return i;
+		}
+		actual->data.value = actual->data.value*8 + value;
+		i++;
+	}
 	return i;
 }
 
@@ -282,6 +277,12 @@ int read_op_or_comment(char* str, int i, lexeme_t* actual, bool* unfinished_comm
 		case '*':
 			actual->type = OP_MULTIPLY;
 			return i+1;
+		case '$':
+			actual->type = NUMBER;
+			return read_hex_number(str, i+1, actual);
+		case '&':
+			actual->type = NUMBER;
+			return read_oct_number(str, i+1, actual);
 	}
 	return i;
 }
@@ -356,10 +357,8 @@ lexeme_t* process_string(char* str, bool* unfinished_comment) {
 	while (str[i]) {
 		if (*unfinished_comment) {
 			i = find_comment_end(str, i, unfinished_comment);
-		} else if ('1' <= str[i] && str[i] <= '9') {
+		} else if ('0' <= str[i] && str[i] <= '9') {
 			i = read_dec_number(str, i, actual);
-		} else if ('0' == str[i]) {
-			i = read_hex_oct_number(str, i, actual);
 		} else if (is_letter(str[i])) {
 			i = read_identifier(str, i, actual);
 		} else if (is_operator(str[i])) {
