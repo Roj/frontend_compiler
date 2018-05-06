@@ -270,19 +270,6 @@ int read_op_or_comment(char* str, int i, lexeme_t* actual, bool* unfinished_comm
 		case '=':
 			actual->type = OP_EQUALS;
 			return i+1;
-		case '!':
-			actual->type = OP_NOT;
-			return i+1;
-		case '&':
-			actual->type = OP_AND;
-			if (str[++i] != '&')
-				lexical_error(str, i, "Expected &");
-			return i+1;
-		case '|':
-			actual->type = OP_OR;
-			if (str[++i] != '|')
-				lexical_error(str, i, "Expected |");
-			return i+1;
 		case '/':
 			actual->type = OP_DIV;
 			return i+1;
@@ -312,12 +299,13 @@ int read_grouping(char* str, int i, lexeme_t* actual) {
 //Decides if a lexeme-identifier is actually a keyword,
 //and changes the type if appropiate.
 void verify_change_keyword(lexeme_t* ident) {
-	char* keywords_str[11] = {"if","for","else", "to", "downto", 
-		"do", "begin", "end", "var", "integer", "program"};
-	lexeme_type_t keywords[11] = {KW_IF, KW_FOR, KW_ELSE, KW_TO, 
+	char* keywords_str[14] = {"if","for","else", "to", "downto", 
+		"do", "begin", "end", "var", "integer", "program", 
+		"not", "and", "or"};
+	lexeme_type_t keywords[14] = {KW_IF, KW_FOR, KW_ELSE, KW_TO, 
 		KW_DOWNTO, KW_DO, BLOCK_START, BLOCK_END, KW_VAR, TYPE_INTEGER,
-		KW_PROGRAM};
-	for (int i = 0; i < 11; i++) {
+		KW_PROGRAM, OP_NOT, OP_AND, OP_OR};
+	for (int i = 0; i < 14; i++) {
 		if (strcmp(keywords_str[i], ident->data.name) == 0) {
 			free(ident->data.name);
 			ident->type = keywords[i];
