@@ -3,7 +3,7 @@
 #include <check.h>
 
 START_TEST (parser_assignment_test) {
-	char* input = "a = 3;";
+	char* input = "a := 3;";
 	bool unfinished_comment = false;
 	lexeme_t* lex = process_string(input, &unfinished_comment);
 	ck_assert_msg(parse_unit(lex, Grouping), 
@@ -12,7 +12,7 @@ START_TEST (parser_assignment_test) {
 END_TEST
 
 START_TEST (parser_assignment_nosemic_test) {
-	char* input = "a = 3";
+	char* input = "a := 3";
 	bool unfinished_comment = false;
 	lexeme_t* lex = process_string(input, &unfinished_comment);
 	ck_assert_msg(!parse_unit(lex, Grouping), 
@@ -21,7 +21,7 @@ START_TEST (parser_assignment_nosemic_test) {
 END_TEST
 
 START_TEST (parser_assignment_simple_expr_test) {
-	char* input = "a = 3+3";
+	char* input = "a := 3+3";
 	bool unfinished_comment = false;
 	lexeme_t* lex = process_string(input, &unfinished_comment);
 	ck_assert_msg(parse_unit(lex, Statement),
@@ -57,7 +57,7 @@ START_TEST (parser_boolean_test) {
 END_TEST
 
 START_TEST (parser_logical_ops_test) {
-	char* input = "!(a&&b)||c + !k - !b";
+	char* input = "not(a and b) or c +  not k - not b";
 	bool unfinished_comment = false;
 	lexeme_t* lex = process_string(input, &unfinished_comment);
 	ck_assert_msg(parse_unit(lex, Expression),
