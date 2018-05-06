@@ -22,10 +22,20 @@ typedef enum _lexeme_type_t {
 	OP_AND,
 	OP_OR,
 	OP_EQUALS,
+	OP_NEQUALS,
 	ASSIGN,
+	ASSIGN_TYPE,
 	KW_IF,
 	KW_ELSE,
 	KW_FOR,
+	KW_TO,
+	KW_DOWNTO,
+	KW_DO,
+	KW_VAR,
+	KW_PROGRAM,
+	TYPE_INTEGER,
+	COMMA,
+	ARRAY_RANGE,
 	BLOCK_START,
 	BLOCK_END,
 	PARENS_START,
@@ -33,6 +43,7 @@ typedef enum _lexeme_type_t {
 	BRACKET_START,
 	BRACKET_END,
 	STM_END,
+	PROGRAM_END,
 	EOI
 } lexeme_type_t;
 

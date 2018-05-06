@@ -6,7 +6,7 @@
 
 static int error_count = 0;
 
-char* lex_str_map[27] = {
+char* lex_str_map[EOI+1] = {
 	"UNDEF",
 	"NUMBER",
 	"IDENTIFIER",
@@ -22,10 +22,20 @@ char* lex_str_map[27] = {
 	"OP_AND",
 	"OP_OR",
 	"OP_EQUALS",
+	"OP_NEQUALS",
 	"ASSIGN",
+	"ASSIGN_TYPE",
 	"KW_IF",
 	"KW_ELSE",
 	"KW_FOR",
+	"KW_TO",
+	"KW_DOWNTO",
+	"KW_DO",
+	"KW_VAR",
+	"KW_PROGRAM",
+	"TYPE_INTEGER",
+	"COMMA",
+	"ARRAY_RANGE",
 	"BLOCK_START",
 	"BLOCK_END",
 	"PARENS_START",
@@ -33,6 +43,7 @@ char* lex_str_map[27] = {
 	"BRACKET_START",
 	"BRACKET_END",
 	"STM_END",
+	"PROGRAM_END",
 	"EOI"
 };
 int get_error_count() {
@@ -107,14 +118,16 @@ bool is_operator(char c) {
 		|| c == '|'
 		|| c == '='
 		|| c == '!'
+		|| c == ':'
+		|| c == '{'
+		|| c == ','
+		|| c == '.'
 	);
 }
 
 bool is_grouping(char c) {
 	return (
-		c == '{'
-		|| c == '}'
-		|| c == '('
+		c == '('
 		|| c == ')'
 		|| c == '['
 		|| c == ']'
@@ -195,13 +208,9 @@ int read_identifier(char* str, int i, lexeme_t* actual) {
 }
 
 int find_comment_end(char* str, int i, bool* unfinished_comment) {
-	bool found_star = false;
 	while (str[i]) {
-		if (found_star && str[i] == '/')
+		if (str[i] == '}')
 			break;
-		found_star = false;
-		if (str[i] == '*')
-				found_star = true;
 		i++;
 	}
 	//Move the pointer to the next position after the comment
@@ -212,19 +221,28 @@ int find_comment_end(char* str, int i, bool* unfinished_comment) {
 
 	return i;
 }
-int read_div_or_comment(char* str, int i, lexeme_t* actual, bool* unfinished_comment) {
-	i++;
-	//Check if it's a multi-line comment /*
-	if (str[i] == '*') {
-		*unfinished_comment = true;
-		i = find_comment_end(str, i, unfinished_comment);
-	} else {
-		actual->type = OP_DIV;
-	}
-	return i;
-}
 int read_op_or_comment(char* str, int i, lexeme_t* actual, bool* unfinished_comment) {
 	switch (str[i]) {
+		case '.':
+			actual->type = PROGRAM_END;
+			if (str[++i] == '.') {
+				actual->type = ARRAY_RANGE;
+				i++;
+			}
+			return i;
+		case ',':
+			actual->type = COMMA;
+			return i+1;
+		case '{':
+			*unfinished_comment = true;
+			return find_comment_end(str, i, unfinished_comment);
+		case ':':
+			actual->type = ASSIGN_TYPE;
+			if (str[++i] == '=') {
+				actual->type = ASSIGN;
+				i++;
+			}
+			return i;
 		case '+':
 			actual->type = OP_PLUS;
 			return i+1;
@@ -240,18 +258,18 @@ int read_op_or_comment(char* str, int i, lexeme_t* actual, bool* unfinished_comm
 			return i;
 		case '<':
 			actual->type = OP_LT;
-			if (str[++i] == '=') {
+			i++;
+			if (str[i] == '=') {
 				actual->type = OP_LTE;
+				i++;
+			} else if (str[i] == '>') {
+				actual->type = OP_NEQUALS;
 				i++;
 			}
 			return i;
 		case '=':
-			actual->type = ASSIGN;
-			if (str[++i] == '=') {
-				actual->type = OP_EQUALS;
-				i++;
-			}
-			return i;
+			actual->type = OP_EQUALS;
+			return i+1;
 		case '!':
 			actual->type = OP_NOT;
 			return i+1;
@@ -266,7 +284,8 @@ int read_op_or_comment(char* str, int i, lexeme_t* actual, bool* unfinished_comm
 				lexical_error(str, i, "Expected |");
 			return i+1;
 		case '/':
-			return read_div_or_comment(str, i, actual, unfinished_comment);
+			actual->type = OP_DIV;
+			return i+1;
 		case '*':
 			actual->type = OP_MULTIPLY;
 			return i+1;
@@ -281,12 +300,6 @@ int read_grouping(char* str, int i, lexeme_t* actual) {
 		case ')':
 			actual->type = PARENS_END;
 			break;
-		case '{':
-			actual->type = BLOCK_START;
-			break;
-		case '}':
-			actual->type = BLOCK_END;
-			break;
 		case '[':
 			actual->type = BRACKET_START;
 			break;
@@ -299,9 +312,12 @@ int read_grouping(char* str, int i, lexeme_t* actual) {
 //Decides if a lexeme-identifier is actually a keyword,
 //and changes the type if appropiate.
 void verify_change_keyword(lexeme_t* ident) {
-	char* keywords_str[3] = {"if","for","else"};
-	lexeme_type_t keywords[3] = {KW_IF, KW_FOR, KW_ELSE};
-	for (int i = 0; i < 2; i++) {
+	char* keywords_str[11] = {"if","for","else", "to", "downto", 
+		"do", "begin", "end", "var", "integer", "program"};
+	lexeme_type_t keywords[11] = {KW_IF, KW_FOR, KW_ELSE, KW_TO, 
+		KW_DOWNTO, KW_DO, BLOCK_START, BLOCK_END, KW_VAR, TYPE_INTEGER,
+		KW_PROGRAM};
+	for (int i = 0; i < 11; i++) {
 		if (strcmp(keywords_str[i], ident->data.name) == 0) {
 			free(ident->data.name);
 			ident->type = keywords[i];
@@ -402,7 +418,7 @@ void delete_lexemes(lexeme_t* current) {
 }
 
 char* lex2str(lexeme_t* lex) {
-	if (lex->type < 27)
+	if (lex->type <= EOI)
 		return lex_str_map[lex->type];
 	printf("Not found for type %d\n", lex->type);
 	return lex_str_map[0];
