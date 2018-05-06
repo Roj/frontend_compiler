@@ -33,6 +33,7 @@ typedef enum _lexeme_type_t {
 	KW_DO,
 	KW_VAR,
 	KW_PROGRAM,
+	KW_THEN,
 	TYPE_INTEGER,
 	COMMA,
 	ARRAY_RANGE,

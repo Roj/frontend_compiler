@@ -33,6 +33,7 @@ char* lex_str_map[EOI+1] = {
 	"KW_DO",
 	"KW_VAR",
 	"KW_PROGRAM",
+	"KW_THEN",
 	"TYPE_INTEGER",
 	"COMMA",
 	"ARRAY_RANGE",

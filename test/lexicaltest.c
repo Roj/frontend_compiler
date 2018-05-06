@@ -107,8 +107,10 @@ void check_types(lexeme_type_t types[], lexeme_t* lex) {
 }
 
 START_TEST (lexeme_keyword_test) {
-	char* input = "abc if for";
-	lexeme_type_t types[3] = {IDENTIFIER, KW_IF, KW_FOR};
+	char* input = "abc if for to downto do begin end program var integer";
+	lexeme_type_t types[11] = {IDENTIFIER, KW_IF, KW_FOR,
+		KW_TO, KW_DOWNTO, KW_DO, BLOCK_START, BLOCK_END, 
+		KW_PROGRAM, KW_VAR, TYPE_INTEGER};
 	bool unfinished_comment = false;
 	lexeme_t* lex = process_string(input, &unfinished_comment);
 
@@ -117,7 +119,7 @@ START_TEST (lexeme_keyword_test) {
 END_TEST
 
 START_TEST (lexeme_expression_test) {
-	char* input = "123+ 192 - j/3 == 9";
+	char* input = "123+ 192 - j/3 = 9";
 	lexeme_type_t types[9] = {
 		NUMBER, OP_PLUS, NUMBER, OP_MINUS, IDENTIFIER, OP_DIV, NUMBER,
 		OP_EQUALS, NUMBER
@@ -130,7 +132,7 @@ START_TEST (lexeme_expression_test) {
 END_TEST
 
 START_TEST (lexeme_assign_test) {
-	char* input = "a = 3 == 9";
+	char* input = "a := 3 = 9";
 	lexeme_type_t types[5] = {
 		IDENTIFIER, ASSIGN, NUMBER, OP_EQUALS, NUMBER
 	};
@@ -142,15 +144,14 @@ START_TEST (lexeme_assign_test) {
 END_TEST
 
 START_TEST (lexeme_grouping_test) {
-	char* input = "if (a[3]+9) {}";
+	char* input = "if a[3]+9 then begin end";
 	//Indentation should reflect level of nesting.
 	lexeme_type_t types[] = {
 		KW_IF, 
-		PARENS_START,
 			IDENTIFIER, 
 			BRACKET_START, NUMBER, BRACKET_END,
 			OP_PLUS, NUMBER, 
-		PARENS_END, 
+		KW_THEN,
 		BLOCK_START, BLOCK_END
 	};
 	bool unfinished_comment = false;
@@ -161,7 +162,7 @@ START_TEST (lexeme_grouping_test) {
 END_TEST
 
 START_TEST (lexeme_comment_test) {
-	char* input = "a/3 /*divides by three*/";
+	char* input = "a/3 {divides by three}";
 	lexeme_type_t types[3] = {
 		IDENTIFIER,
 		OP_DIV,
@@ -175,7 +176,7 @@ START_TEST (lexeme_comment_test) {
 END_TEST
 
 START_TEST (lexeme_unfinished_comment_test) {
-	char* input = "a/3 /* divides by throops 1+2\n";
+	char* input = "a/3 { divides by throops 1+2\n";
 	bool unfinished_comment = false;
 	process_string(input, &unfinished_comment);
 
@@ -185,7 +186,7 @@ START_TEST (lexeme_unfinished_comment_test) {
 END_TEST
 
 START_TEST (lexeme_not_test) {
-	char* input = "a = !b";
+	char* input = "a := not b";
 	lexeme_type_t types[4] = {IDENTIFIER, ASSIGN, OP_NOT, IDENTIFIER};
 	bool unfinished_comment = false;
 	lexeme_t* lex = process_string(input, &unfinished_comment);
@@ -195,7 +196,7 @@ START_TEST (lexeme_not_test) {
 END_TEST
 
 START_TEST (lexeme_boolean_op_test) {
-	char* input = "!(b&&a) || 0x0";
+	char* input = "not (b and a) or 0x0";
 	lexeme_type_t types[8] = {OP_NOT, PARENS_START, IDENTIFIER, OP_AND, IDENTIFIER, PARENS_END, OP_OR, NUMBER};
 	bool unfinished_comment = false;
 	lexeme_t* lex = process_string(input, &unfinished_comment);
