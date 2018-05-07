@@ -65,6 +65,68 @@ START_TEST (parser_logical_ops_test) {
 }
 END_TEST
 
+START_TEST (parser_expr_is_not_statement) {
+	char* input = "b=a;";
+	bool unfinished_comment = false;
+	lexeme_t* lex = process_string(input, &unfinished_comment);
+	ck_assert_msg(!parse_unit(lex, Statement),
+		"Failed: b=a; should not be allowed as statement");
+}
+END_TEST
+
+START_TEST (parser_if_oneline_test) {
+	char* input = "if a>b then b:=a;";
+	bool unfinished_comment = false;
+	lexeme_t* lex = process_string(input, &unfinished_comment);
+	ck_assert_msg(parse_unit(lex, Grouping),
+		"Failed: if a>b then b:=a");
+}
+END_TEST
+
+START_TEST (parser_if_manyline_test) {
+	char* input = "if a>b then begin b:=a; b:=a; end;";
+	bool unfinished_comment = false;
+	lexeme_t* lex = process_string(input, &unfinished_comment);
+	ck_assert_msg(parse_unit(lex, Grouping),
+		"Failed: if a>b then begin b:=a; b:=a; end;");
+}
+END_TEST
+
+START_TEST (parser_if_oneline_else_oneline_test) {
+	char* input = "if a>b then b:=a; else a:=b;";
+	bool unfinished_comment = false;
+	lexeme_t* lex = process_string(input, &unfinished_comment);
+	ck_assert_msg(parse_unit(lex, Grouping),
+		"Failed: if a>b then b:=a; else a:=b;");
+}
+END_TEST
+
+START_TEST (parser_if_manyline_else_oneline_test) {
+	char* input = "if a>b then begin b:=a; b:=a; end; else b:=a;";
+	bool unfinished_comment = false;
+	lexeme_t* lex = process_string(input, &unfinished_comment);
+	ck_assert_msg(parse_unit(lex, Grouping),
+		"Failed: if a>b then begin b:=a; b:=a; end; else b:=a;");
+}
+END_TEST
+
+START_TEST (parser_if_manyline_else_manyline_test) {
+	char* input = "if a>b then begin b:=a; b:=a; end; else begin b:=a; b:=a; end;";
+	bool unfinished_comment = false;
+	lexeme_t* lex = process_string(input, &unfinished_comment);
+	ck_assert_msg(parse_unit(lex, Grouping),
+		"Failed: if a>b then begin b:=a; b:=a; end; else begin b:=a; b:=a; end;");
+}
+END_TEST
+
+START_TEST (parser_if_oneline_else_manyline_test) {
+	char* input = "if a>b then b:=a; else begin b:=a; b:=a; end;";
+	bool unfinished_comment = false;
+	lexeme_t* lex = process_string(input, &unfinished_comment);
+	ck_assert_msg(parse_unit(lex, Grouping),
+		"Failed: if a>b then b:=a; else begin b:=a; b:=a; end;");
+}
+END_TEST
 
 Suite* parser_suite(void) {
 	Suite* suite = suite_create("Syntactical analyzer");
@@ -76,6 +138,13 @@ Suite* parser_suite(void) {
 	tcase_add_test(tc_core, parser_complete_compound_expr_test);
 	tcase_add_test(tc_core, parser_boolean_test);
 	tcase_add_test(tc_core, parser_logical_ops_test);
+	tcase_add_test(tc_core, parser_expr_is_not_statement);
+	tcase_add_test(tc_core, parser_if_oneline_test);
+	tcase_add_test(tc_core, parser_if_oneline_else_manyline_test);
+	tcase_add_test(tc_core, parser_if_oneline_else_oneline_test);
+	tcase_add_test(tc_core, parser_if_manyline_test);
+	tcase_add_test(tc_core, parser_if_manyline_else_oneline_test);
+	tcase_add_test(tc_core, parser_if_manyline_else_manyline_test);
 	suite_add_tcase(suite, tc_core);
 	return suite;
 }

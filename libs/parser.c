@@ -44,11 +44,10 @@ bool parse_unit(lexeme_t* fs, void(*Nonterminal)(void)) {
 }
 void Grouping() {
 	switch (lex->type) {
-		case KW_IF:
+		case KW_IF: //G -> if cond then Block G
 			match(KW_IF);
-			match(PARENS_START);
+			match(KW_THEN);
 			Expression();
-			match(PARENS_END);
 			Block();
 			Else();
 			Grouping();
@@ -103,6 +102,7 @@ void Block() {
 			match(BLOCK_START);
 			Grouping();
 			match(BLOCK_END);
+			match(STM_END);
 			break;
 		case IDENTIFIER: //first of Statement
 			Statement();
