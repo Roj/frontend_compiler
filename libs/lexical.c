@@ -39,6 +39,7 @@ char* lex_str_map[EOI+1] = {
 	"KW_OF",
 	"KW_FUNCTION",
 	"KW_WHILE",
+	"KW_ARRAY",
 	"TYPE_INTEGER",
 	"COMMA",
 	"ARRAY_RANGE",
@@ -306,17 +307,18 @@ int read_grouping(char* str, int i, lexeme_t* actual) {
 //Decides if a lexeme-identifier is actually a keyword,
 //and changes the type if appropiate.
 void verify_change_keyword(lexeme_t* ident) {
-	char* keywords_str[20] = {"if","for", "while", "then", "else", "to", "downto",
+	char* keywords_str[21] = {"if","for", "while", "then", "else", "to", "downto",
 		"do", "begin", "end", "var", "of", "integer", 
 		"program", "function", "not", "and", "or",
-		"mod", "div"
+		"mod", "div",
+		"array"
 		};
-	lexeme_type_t keywords[20] = {
+	lexeme_type_t keywords[21] = {
 		KW_IF, KW_FOR, KW_WHILE, KW_THEN, KW_ELSE, KW_TO, KW_DOWNTO, 
 		KW_DO, BLOCK_START, BLOCK_END, KW_VAR, KW_OF, TYPE_INTEGER,
 		KW_PROGRAM, KW_FUNCTION, OP_NOT, OP_AND, OP_OR, 
-		OP_MOD, OP_INTDIV};
-	for (int i = 0; i < 20; i++) {
+		OP_MOD, OP_INTDIV, KW_ARRAY};
+	for (int i = 0; i < 21; i++) {
 		if (strcmp(keywords_str[i], ident->data.name) == 0) {
 			free(ident->data.name);
 			ident->type = keywords[i];
