@@ -70,6 +70,7 @@ void Grouping() {
 			match(STM_END);
 			Grouping();
 			break;
+		case KW
 		default:
 			return;
 		//	since it can be epsilon I don't think it throws synxerror on def

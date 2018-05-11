@@ -148,6 +148,21 @@ START_TEST (parser_for_simple_oneline_to) {
 }
 END_TEST
 
+START_TEST (parser_for_simple_oneline_downto) {
+	parser_test("for a := 1 downto -10 do b:=3;", Grouping);
+}
+END_TEST
+
+START_TEST (parser_for_expressions_oneline) {
+	parser_test("for a := (1+c)*3 to 15*c do b:=3;", Grouping);
+}
+END_TEST
+
+START_TEST (parser_for_expressions_multiline) {
+	parser_test("for a := (1+c)*3 to 15*c do begin b:=3; b:=3; end;", Grouping);
+}
+END_TEST
+
 Suite* parser_suite(void) {
 	Suite* suite = suite_create("Syntactical analyzer");
 	TCase* tc_core = tcase_create("Core");
@@ -167,6 +182,9 @@ Suite* parser_suite(void) {
 	tcase_add_test(tc_core, parser_if_manyline_else_oneline_test);
 	tcase_add_test(tc_core, parser_if_manyline_else_manyline_test);
 	tcase_add_test(tc_core, parser_for_simple_oneline_to);
+	tcase_add_test(tc_core, parser_for_simple_oneline_downto);
+	tcase_add_test(tc_core, parser_for_expressions_oneline);
+	tcase_add_test(tc_core, parser_for_expressions_multiline);
 	suite_add_tcase(suite, tc_core);
 	return suite;
 }
