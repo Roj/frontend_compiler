@@ -9,6 +9,8 @@ void syntax_error(int num_options, ...) {
 	va_start (arguments, num_options); 
 	printf("Unexpected lexeme of type %s, expected ", lex2str(lex));
 	for (int i = 0; i < num_options; i++) {
+		//TODO: add a function that converts type to actual symbol
+		//e.g. PARENS_START-> (
 		printf("%s", lextype2str(va_arg(arguments, lexeme_type_t)));
 		if (i < num_options-2)
 			printf(", ");
@@ -46,8 +48,8 @@ void Grouping() {
 	switch (lex->type) {
 		case KW_IF: //G -> if cond then Block G
 			match(KW_IF);
-			match(KW_THEN);
 			Expression();
+			match(KW_THEN);
 			Block();
 			Else();
 			Grouping();
@@ -106,6 +108,7 @@ void Block() {
 			break;
 		case IDENTIFIER: //first of Statement
 			Statement();
+			match(STM_END);
 			break;
 		default:
 			syntax_error(2, BLOCK_START, IDENTIFIER);
