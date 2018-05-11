@@ -3,15 +3,37 @@ Therefore we have:
 
 ## Control structures
 ```
-Grouping -> if(Expression) Block Else Grouping
-Grouping -> for(Statement; Expression; Statement) Block Grouping
+Program -> PROGRAM IDENTIFIER; ConstantDeclarations TypeDeclarations BEGIN Grouping END.
+
+ConstantDeclarations -> const ConstDecl;
+ConstantDeclarations -> epsilon
+ConstDecl -> IDENTIFIER = NUMBER  ConstDeclPrime
+ConstDeclPrime -> ; IDENTIFIER = Expression
+ConstDeclPrime -> epsilon
+
+TypeDeclarations -> VAR TypeDecl;
+TypeDeclarations -> epsilon
+TypeDecl -> IDENTIFIER: Type TypeDeclPrime
+TypeDeclPrime -> ; IDENTIFIER: Type
+TypeDeclPrime -> epsilon
+Type -> INTEGER
+Type -> ARRAY [ NUMBER .. NUMBER ] OF INTEGER
+
+Grouping -> if Expression then Block Else Grouping
+Grouping -> for Identifier := Expression ForDirection Expression do Block Grouping
+Grouping -> while Expression do Block Grouping
 Grouping -> Statement; Grouping
-Statement -> Identifier = Expression 
-Else -> else Block
+ForDirection -> TO
+ForDirection -> DOWNTO
+Statement -> IDENTIFIER IdentifierStatement
+IdentifierStatement -> := Expression
+IdentifierStatement -> [ Expression ] := Expression
+IdentifierStatement -> (Arguments)
+Else -> ELSE Block
 Else -> epsilon
-Block -> {Grouping}
+Block -> begin Grouping end;
 Block -> Statement;
-Block -> S
+Block -> Statement
 Grouping -> epsilon
 ```
 
@@ -24,18 +46,23 @@ Expression -> Expression <= Term
 Expression -> Expression > Term
 Expression -> Expression < Term
 Expression -> ! Expression
-Expression -> Expression && Term
-Expression -> Expression || Term
+Expression -> Expression AND Term
+Expression -> Expression OR Term
 Expression -> Term
 Term -> Term * Factor
 Term -> Term / Factor
 Term -> Factor
-Factor -> Identifier
-Factor -> Number
+Factor -> IDENTIIFER FuncCall
+Factor -> NUMBER
 Factor -> (Expression)
+FuncCall -> (Arguments)
+FuncCall -> epsilon
+Arguments-> Expression, Arguments
+Arguments-> Expression
+Arguments-> epsilon
 ```
 
-## Expressions -- left recursion removal
+## Expressions -- LL1 conversion
 ```
 Expression -> Term ExpressionPrime
 ExpressionPrime -> >= Term ExpressionPrime
@@ -44,14 +71,21 @@ ExpressionPrime -> > Term ExpressionPrime
 ExpressionPrime -> < Term ExpressionPrime
 ExpressionPrime -> + Term ExpressionPrime
 ExpressionPrime -> - Term ExpressionPrime
-ExpressionPrime -> && Term ExpressionPrime
-ExpressionPrime -> || Term ExpressionPrime
+ExpressionPrime -> and Term ExpressionPrime
+ExpressionPrime -> or Term ExpressionPrime
 ExpressionPrime -> epsilon
 Term -> Factor TermPrime
 TermPrime -> * Factor TermPrime
 TermPrime -> / Factor TermPrime
 TermPrime -> epsilon
 Factor -> ! Factor
-Factor -> IDENTIFIER
+Factor -> IDENTIFIER FuncCall
+Factor -> NUMBER
 Factor -> (Expression)
+FuncCall -> (Arguments)
+FuncCall -> epsilon
+Arguments-> Expression RestArgs
+RestArgs -> , Expression
+Arguments-> epsilon
+RestArgs -> epsilon
 ```
