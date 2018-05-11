@@ -128,6 +128,7 @@ void Block() {
 void Expression() {
 	switch (lex->type) {
 		case OP_NOT:
+		case OP_MINUS:
 		case NUMBER:
 		case IDENTIFIER:
 		case PARENS_START:
@@ -188,6 +189,7 @@ void ExpressionPrime() {
 void Term() {
 	switch (lex->type) {
 		case OP_NOT:
+		case OP_MINUS:
 		case IDENTIFIER:
 		case NUMBER:
 		case PARENS_START:
@@ -223,6 +225,10 @@ void Factor() {
 			break;
 		case IDENTIFIER:
 			match(IDENTIFIER);
+			break;
+		case OP_MINUS:
+			match(OP_MINUS);
+			Factor();
 			break;
 		case NUMBER:
 			match(NUMBER);

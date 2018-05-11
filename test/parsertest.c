@@ -2,6 +2,14 @@
 #include "../libs/parser.h"
 #include <check.h>
 
+void parser_test(char* input, void(*Nonterminal)(void)) {
+	bool unfinished_comment = false;
+	lexeme_t* lex = process_string(input, &unfinished_comment);
+	char errormsg[1000];
+	sprintf(errormsg, "Failed: %s", input);
+	ck_assert_msg(parse_unit(lex, Nonterminal), errormsg);
+}
+
 START_TEST (parser_assignment_test) {
 	char* input = "a := 3;";
 	bool unfinished_comment = false;
@@ -53,6 +61,13 @@ START_TEST (parser_boolean_test) {
 	lexeme_t* lex = process_string(input, &unfinished_comment);
 	ck_assert_msg(parse_unit(lex, Expression),
 		"Grammar does not support boolean expressions");
+}
+END_TEST
+
+START_TEST (parser_unaryminus_test) {
+	parser_test("-3", Factor);
+	parser_test("-a", Factor);
+	parser_test("-a+(-3)", Expression);
 }
 END_TEST
 
@@ -119,14 +134,6 @@ START_TEST (parser_if_manyline_else_manyline_test) {
 }
 END_TEST
 
-void parser_test(char* input, void(*Nonterminal)(void)) {
-	bool unfinished_comment = false;
-	lexeme_t* lex = process_string(input, &unfinished_comment);
-	char errormsg[1000];
-	sprintf(errormsg, "Failed: %s", input);
-	ck_assert_msg(parse_unit(lex, Nonterminal), errormsg);
-}
-
 START_TEST (parser_if_oneline_else_manyline_test) {
 	char* input = "if a>b then b:=a; else begin b:=a; b:=a; end;";
 	bool unfinished_comment = false;
@@ -150,6 +157,7 @@ Suite* parser_suite(void) {
 	tcase_add_test(tc_core, parser_compound_expr_test);
 	tcase_add_test(tc_core, parser_complete_compound_expr_test);
 	tcase_add_test(tc_core, parser_boolean_test);
+	tcase_add_test(tc_core, parser_unaryminus_test);
 	tcase_add_test(tc_core, parser_logical_ops_test);
 	tcase_add_test(tc_core, parser_expr_is_not_statement);
 	tcase_add_test(tc_core, parser_if_oneline_test);
