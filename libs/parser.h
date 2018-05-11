@@ -9,6 +9,7 @@ bool parse_unit(lexeme_t* fs, void (*Nonterminal)(void));
 void Grouping();
 void Statement();
 void Block();
+void ForDirection();
 void Else();
 void Expression();
 void ExpressionPrime();

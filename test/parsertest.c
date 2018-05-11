@@ -137,7 +137,7 @@ START_TEST (parser_if_oneline_else_manyline_test) {
 END_TEST
 
 START_TEST (parser_for_simple_oneline_to) {
-	parser_test("for a := 1 to 10 do b:=3", Grouping);
+	parser_test("for a := 1 to 10 do b:=3;", Grouping);
 }
 END_TEST
 

@@ -56,13 +56,12 @@ void Grouping() {
 			break;
 		case KW_FOR:
 			match(KW_FOR);
-			match(PARENS_START);
-			Statement();
-			match(STM_END);
+			match(IDENTIFIER);
+			match(ASSIGN);
 			Expression();
-			match(STM_END);
-			Statement();
-			match(PARENS_END);
+			ForDirection();
+			Expression();
+			match(KW_DO);
 			Block();
 			Grouping();
 			break;
@@ -74,6 +73,18 @@ void Grouping() {
 		default:
 			return;
 		//	since it can be epsilon I don't think it throws synxerror on def
+	}
+}
+void ForDirection() {
+	switch (lex->type) {
+		case KW_TO:
+			match(KW_TO);
+			break;
+		case KW_DOWNTO:
+			match(KW_DOWNTO);
+			break;
+		default:
+			syntax_error(2, KW_TO, KW_DOWNTO);
 	}
 }
 void Statement() {
