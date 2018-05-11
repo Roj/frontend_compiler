@@ -119,12 +119,25 @@ START_TEST (parser_if_manyline_else_manyline_test) {
 }
 END_TEST
 
+void parser_test(char* input, void(*Nonterminal)(void)) {
+	bool unfinished_comment = false;
+	lexeme_t* lex = process_string(input, &unfinished_comment);
+	char errormsg[1000];
+	sprintf(errormsg, "Failed: %s", input);
+	ck_assert_msg(parse_unit(lex, Nonterminal), errormsg);
+}
+
 START_TEST (parser_if_oneline_else_manyline_test) {
 	char* input = "if a>b then b:=a; else begin b:=a; b:=a; end;";
 	bool unfinished_comment = false;
 	lexeme_t* lex = process_string(input, &unfinished_comment);
 	ck_assert_msg(parse_unit(lex, Grouping),
 		"Failed: if a>b then b:=a; else begin b:=a; b:=a; end;");
+}
+END_TEST
+
+START_TEST (parser_for_simple_oneline_to) {
+	parser_test("for a := 1 to 10 do b:=3", Grouping);
 }
 END_TEST
 
@@ -145,6 +158,7 @@ Suite* parser_suite(void) {
 	tcase_add_test(tc_core, parser_if_manyline_test);
 	tcase_add_test(tc_core, parser_if_manyline_else_oneline_test);
 	tcase_add_test(tc_core, parser_if_manyline_else_manyline_test);
+	tcase_add_test(tc_core, parser_for_simple_oneline_to);
 	suite_add_tcase(suite, tc_core);
 	return suite;
 }
