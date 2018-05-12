@@ -290,6 +290,7 @@ void Factor() {
 			break;
 		case IDENTIFIER:
 			match(IDENTIFIER);
+			FuncCall();
 			break;
 		case OP_MINUS:
 			match(OP_MINUS);

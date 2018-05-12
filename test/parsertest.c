@@ -80,6 +80,11 @@ START_TEST (parser_logical_ops_test) {
 }
 END_TEST
 
+START_TEST (parser_expr_funccall) {
+	parser_test("a-b(3)", Expression);
+}
+END_TEST
+
 START_TEST (parser_expr_is_not_statement) {
 	char* input = "b=a;";
 	bool unfinished_comment = false;
@@ -94,10 +99,26 @@ START_TEST (parser_statement_funccall) {
 }
 END_TEST
 
+START_TEST (parser_statement_funccall_empty) {
+	parser_test("writeln();", Grouping);
+}
+END_TEST
+
+START_TEST (parser_statement_funccall_manyargs) {
+	parser_test("writeln(a,b,c);", Grouping);
+}
+END_TEST
+
+START_TEST (parser_statement_funccall_manyargs_expr) {
+	parser_test("writeln(a,-b,c+1);", Grouping);
+}
+END_TEST
+
 START_TEST (parser_statement_array_assignment) {
 	parser_test("a[3]:=b;", Grouping);
 }
 END_TEST
+
 
 START_TEST (parser_if_oneline_test) {
 	char* input = "if a>b then b:=a;";
@@ -200,8 +221,12 @@ Suite* parser_suite(void) {
 	tcase_add_test(tc_core, parser_boolean_test);
 	tcase_add_test(tc_core, parser_unaryminus_test);
 	tcase_add_test(tc_core, parser_logical_ops_test);
+	tcase_add_test(tc_core, parser_expr_funccall);
 	tcase_add_test(tc_core, parser_expr_is_not_statement);
 	tcase_add_test(tc_core, parser_statement_funccall);
+	tcase_add_test(tc_core, parser_statement_funccall_empty);
+	tcase_add_test(tc_core, parser_statement_funccall_manyargs);
+	tcase_add_test(tc_core, parser_statement_funccall_manyargs_expr);
 	tcase_add_test(tc_core, parser_statement_array_assignment);
 	tcase_add_test(tc_core, parser_if_oneline_test);
 	tcase_add_test(tc_core, parser_if_oneline_else_manyline_test);
