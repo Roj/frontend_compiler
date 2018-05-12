@@ -65,12 +65,18 @@ void Grouping() {
 			Block();
 			Grouping();
 			break;
+		case KW_WHILE:
+			match(KW_WHILE);
+			Expression();
+			match(KW_DO);
+			Block();
+			Grouping();
+			break;
 		case IDENTIFIER: //first of Statement
 			Statement();
 			match(STM_END);
 			Grouping();
 			break;
-		case KW
 		default:
 			return;
 		//	since it can be epsilon I don't think it throws synxerror on def
@@ -88,12 +94,70 @@ void ForDirection() {
 			syntax_error(2, KW_TO, KW_DOWNTO);
 	}
 }
+void RestArgs() {
+	switch (lex->type) {
+		case COMMA:
+			match(COMMA);
+			Expression();
+			RestArgs();
+			break;
+		default: //RestArgs->epsilon
+			return;
+	}
+}
+void Arguments() {
+	switch (lex->type) {
+		//First of Expression.
+		case OP_NOT:
+		case OP_MINUS:
+		case NUMBER:
+		case IDENTIFIER:
+		case PARENS_START:
+			Expression();
+			RestArgs();
+			break;
+		default: //Arguments->epsilon
+			return;
+	}
+}
+void FuncCall() {
+	switch (lex->type) {
+		case PARENS_START:
+			match(PARENS_START);
+			Arguments();
+			match(PARENS_END);
+			break;
+		default: //FuncCall -> $
+			return;
+	}
+}
+void IdentifierStatement() {
+	switch (lex->type) {
+		case ASSIGN: //Variable assignment
+			match(ASSIGN);
+			Expression();
+			break;
+		case BRACKET_START: //Array assignment
+			match(BRACKET_START);
+			Expression();
+			match(BRACKET_END);
+			match(ASSIGN);
+			Expression();
+			break;
+		case PARENS_START: //Function call
+			match(PARENS_START);
+			Arguments();
+			match(PARENS_END);
+			break;
+		default:
+			syntax_error(3, ASSIGN, BRACKET_START, PARENS_START);
+	}
+}
 void Statement() {
 	switch (lex->type) {
 		case IDENTIFIER:
 			match(IDENTIFIER);
-			match(ASSIGN);
-			Expression();
+			IdentifierStatement();
 			break;
 		default:
 			syntax_error(1, IDENTIFIER);
@@ -137,7 +201,7 @@ void Expression() {
 			ExpressionPrime();
 			break;
 		default:
-			syntax_error(3, NUMBER, IDENTIFIER, PARENS_START);
+			syntax_error(5, NUMBER, IDENTIFIER, PARENS_START, OP_NOT, OP_MINUS);
 	}
 }
 void ExpressionPrime() {

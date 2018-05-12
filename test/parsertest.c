@@ -89,6 +89,16 @@ START_TEST (parser_expr_is_not_statement) {
 }
 END_TEST
 
+START_TEST (parser_statement_funccall) {
+	parser_test("writeln(32);", Grouping);
+}
+END_TEST
+
+START_TEST (parser_statement_array_assignment) {
+	parser_test("a[3]:=b;", Grouping);
+}
+END_TEST
+
 START_TEST (parser_if_oneline_test) {
 	char* input = "if a>b then b:=a;";
 	bool unfinished_comment = false;
@@ -163,6 +173,22 @@ START_TEST (parser_for_expressions_multiline) {
 }
 END_TEST
 
+START_TEST (parser_while_simple_oneline) {
+	parser_test("while a>b do a:=a+1;", Grouping);
+}
+END_TEST
+
+START_TEST (parser_while_expression_oneline) {
+	parser_test("while (a>b) and (a<MAXINT) do a:=a+1;", Grouping);
+}
+END_TEST
+
+START_TEST (parser_while_simple_multiline) {
+	parser_test("while a>b do begin a:=a+1; a:=a+1; end;", Grouping);
+}
+END_TEST
+
+
 Suite* parser_suite(void) {
 	Suite* suite = suite_create("Syntactical analyzer");
 	TCase* tc_core = tcase_create("Core");
@@ -175,6 +201,8 @@ Suite* parser_suite(void) {
 	tcase_add_test(tc_core, parser_unaryminus_test);
 	tcase_add_test(tc_core, parser_logical_ops_test);
 	tcase_add_test(tc_core, parser_expr_is_not_statement);
+	tcase_add_test(tc_core, parser_statement_funccall);
+	tcase_add_test(tc_core, parser_statement_array_assignment);
 	tcase_add_test(tc_core, parser_if_oneline_test);
 	tcase_add_test(tc_core, parser_if_oneline_else_manyline_test);
 	tcase_add_test(tc_core, parser_if_oneline_else_oneline_test);
@@ -185,6 +213,9 @@ Suite* parser_suite(void) {
 	tcase_add_test(tc_core, parser_for_simple_oneline_downto);
 	tcase_add_test(tc_core, parser_for_expressions_oneline);
 	tcase_add_test(tc_core, parser_for_expressions_multiline);
+	tcase_add_test(tc_core, parser_while_simple_oneline);
+	tcase_add_test(tc_core, parser_while_expression_oneline);
+	tcase_add_test(tc_core, parser_while_simple_multiline);
 	suite_add_tcase(suite, tc_core);
 	return suite;
 }
