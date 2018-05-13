@@ -44,6 +44,23 @@ bool parse_unit(lexeme_t* fs, void(*Nonterminal)(void)) {
 	Nonterminal();
 	return lex->type == EOI && syntax_errors == 0;
 }
+void Program() {
+	switch (lex->type) {
+		case KW_PROGRAM:
+			match(KW_PROGRAM);
+			match(IDENTIFIER);
+			match(STM_END);
+			ConstantDeclarations();
+			TypeDeclarations();
+			match(BLOCK_START);
+			Grouping();
+			match(BLOCK_END);
+			match(PROGRAM_END);
+			break;
+		default:
+			syntax_error(1, KW_PROGRAM);
+	}
+}
 void ConstDeclPrime() {
 	switch (lex->type) {
 		case IDENTIFIER:
@@ -67,7 +84,7 @@ void ConstDecl() {
 			ConstDeclPrime();
 			break;
 		default:
-			return; //ConstDecl -> epsilon
+			syntax_error(1, IDENTIFIER);
 	}
 }
 void ConstantDeclarations() {
@@ -77,7 +94,7 @@ void ConstantDeclarations() {
 			ConstDecl();
 			break;
 		default:
-			syntax_error(1, KW_CONST);
+			return; //ConstantDeclarations->epsilon
 	}
 }
 void Type() {

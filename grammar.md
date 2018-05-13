@@ -26,6 +26,7 @@ Grouping -> if Expression then Block Else Grouping
 Grouping -> for Identifier := Expression ForDirection Expression do Block Grouping
 Grouping -> while Expression do Block Grouping
 Grouping -> Statement; Grouping
+Grouping -> epsilon
 ForDirection -> TO
 ForDirection -> DOWNTO
 Statement -> IDENTIFIER IdentifierStatement
@@ -37,7 +38,6 @@ Else -> epsilon
 Block -> begin Grouping end;
 Block -> Statement;
 //Block -> Statement
-Grouping -> epsilon
 ```
 
 ## Expressions

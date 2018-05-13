@@ -263,6 +263,26 @@ START_TEST (parser_var_declaration_array_minus) {
 }
 END_TEST
 
+START_TEST (parser_program_empty) {
+	parser_test("program abc; begin end.", Program);
+}
+END_TEST
+
+START_TEST (parser_program_empty_type) {
+	parser_test("program abc; var a:integer; begin end.", Program);
+}
+END_TEST
+
+START_TEST (parser_program_empty_const) {
+	parser_test("program abc; const a = $10; begin end.", Program);
+}
+END_TEST
+
+START_TEST (parser_program_empty_const_type) {
+	parser_test("program abc; const a=10; var b:integer; begin end.", Program);
+}
+END_TEST
+
 Suite* parser_suite(void) {
 	Suite* suite = suite_create("Syntactical analyzer");
 	TCase* tc_core = tcase_create("Core");
@@ -303,6 +323,10 @@ Suite* parser_suite(void) {
 	tcase_add_test(tc_core, parser_var_declaration_multiple_comma);
 	tcase_add_test(tc_core, parser_var_declaration_array);
 	tcase_add_test(tc_core, parser_var_declaration_array_minus);
+	tcase_add_test(tc_core, parser_program_empty);
+	tcase_add_test(tc_core, parser_program_empty_type);
+	tcase_add_test(tc_core, parser_program_empty_const);
+	tcase_add_test(tc_core, parser_program_empty_const_type);
 	suite_add_tcase(suite, tc_core);
 	return suite;
 }
