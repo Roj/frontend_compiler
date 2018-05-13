@@ -80,6 +80,82 @@ void ConstantDeclarations() {
 			syntax_error(1, KW_CONST);
 	}
 }
+void Type() {
+	switch (lex->type) {
+		case TYPE_INTEGER:
+			match(TYPE_INTEGER);
+			break;
+		case KW_ARRAY:
+			match(KW_ARRAY);
+			match(BRACKET_START);
+			Expression();
+			match(ARRAY_RANGE);
+			Expression();
+			match(BRACKET_END);
+			match(KW_OF);
+			match(TYPE_INTEGER);
+			break;
+		default:
+			syntax_error(2, TYPE_INTEGER, KW_ARRAY);
+	}
+}
+void VariablesPrime() {
+	switch (lex->type) {
+		case COMMA:
+			match(COMMA);
+			match(IDENTIFIER);
+			VariablesPrime();
+			break;
+		default:
+			return; //VariablesPrime -> epsilon
+	}
+}
+void Variables() {
+	switch (lex->type) {
+		case IDENTIFIER:
+			match(IDENTIFIER);
+			VariablesPrime();
+			break;
+		default:
+			syntax_error(1, IDENTIFIER);
+	}
+}
+void TypeDeclPrime() {
+	switch (lex->type) {
+		case IDENTIFIER:
+			Variables();
+			match(ASSIGN_TYPE);
+			Type();
+			match(STM_END);
+			TypeDeclPrime();
+			break;
+		default:
+			return; //TypeDeclPrime -> epsilon
+	}
+}
+void TypeDecl() {
+	switch (lex->type) {
+		case IDENTIFIER:
+			Variables();
+			match(ASSIGN_TYPE);
+			Type();
+			match(STM_END);
+			TypeDeclPrime();
+			break;
+		default:
+			syntax_error(1, IDENTIFIER);
+	}
+}
+void TypeDeclarations() {
+	switch (lex->type) {
+		case KW_VAR:
+			match(KW_VAR);
+			TypeDecl();
+			break;
+		default:
+			return; //TypeDeclarations -> epsilon
+	}
+}
 void Grouping() {
 	switch (lex->type) {
 		case KW_IF: //G -> if cond then Block G

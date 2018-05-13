@@ -7,6 +7,7 @@ bool parse(lexeme_t* first_symbol);
 bool parse_unit(lexeme_t* fs, void (*Nonterminal)(void));
 //This is not super-useful, but is necessary for unit testing.
 void ConstantDeclarations();
+void TypeDeclarations();
 void Grouping();
 void Statement();
 void Block();

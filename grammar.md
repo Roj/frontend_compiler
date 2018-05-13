@@ -11,13 +11,16 @@ ConstDecl -> IDENTIFIER = Expression; ConstDeclPrime
 ConstDeclPrime -> IDENTIFIER = Expression;
 ConstDeclPrime -> epsilon
 
-TypeDeclarations -> VAR TypeDecl;
+TypeDeclarations -> VAR TypeDecl
 TypeDeclarations -> epsilon
-TypeDecl -> IDENTIFIER: Type TypeDeclPrime
-TypeDeclPrime -> ; IDENTIFIER: Type
+TypeDecl -> Variables: Type; TypeDeclPrime
+TypeDeclPrime -> Variables: Type;
 TypeDeclPrime -> epsilon
+Variables -> IDENTIFIER VariablesPrime
+VariablesPrime -> , IDENTIFIER VariablesPrime
+VariablesPrime -> epsilon
 Type -> INTEGER
-Type -> ARRAY [ NUMBER .. NUMBER ] OF INTEGER
+Type -> ARRAY [ Expression .. Expression ] OF INTEGER
 
 Grouping -> if Expression then Block Else Grouping
 Grouping -> for Identifier := Expression ForDirection Expression do Block Grouping

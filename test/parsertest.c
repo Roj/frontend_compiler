@@ -238,6 +238,31 @@ START_TEST (parser_constant_declaration_invalid) {
 }
 END_TEST
 
+START_TEST (parser_var_declaration_simple) {
+	parser_test("var a: integer;", TypeDeclarations);
+}
+END_TEST
+
+START_TEST (parser_var_declaration_multiple) {
+	parser_test("var a: integer; c:integer;", TypeDeclarations);
+}
+END_TEST
+
+START_TEST (parser_var_declaration_multiple_comma) {
+	parser_test("var a,b: integer; c:integer;", TypeDeclarations);
+}
+END_TEST
+
+START_TEST (parser_var_declaration_array) {
+	parser_test("var a: array[0..20] of integer;", TypeDeclarations);
+}
+END_TEST
+
+START_TEST (parser_var_declaration_array_minus) {
+	parser_test("var a: array[-20..20] of integer;", TypeDeclarations);
+}
+END_TEST
+
 Suite* parser_suite(void) {
 	Suite* suite = suite_create("Syntactical analyzer");
 	TCase* tc_core = tcase_create("Core");
@@ -273,6 +298,11 @@ Suite* parser_suite(void) {
 	tcase_add_test(tc_core, parser_constant_declaration_expr);
 	tcase_add_test(tc_core, parser_constant_declaration_many);
 	tcase_add_test(tc_core, parser_constant_declaration_invalid);
+	tcase_add_test(tc_core, parser_var_declaration_simple);
+	tcase_add_test(tc_core, parser_var_declaration_multiple);
+	tcase_add_test(tc_core, parser_var_declaration_multiple_comma);
+	tcase_add_test(tc_core, parser_var_declaration_array);
+	tcase_add_test(tc_core, parser_var_declaration_array_minus);
 	suite_add_tcase(suite, tc_core);
 	return suite;
 }
