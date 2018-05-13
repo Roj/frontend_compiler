@@ -34,6 +34,7 @@ typedef enum _lexeme_type_t {
 	KW_DOWNTO,
 	KW_DO,
 	KW_VAR,
+	KW_CONST,
 	KW_PROGRAM,
 	KW_THEN,
 	KW_OF,

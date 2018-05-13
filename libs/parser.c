@@ -44,6 +44,42 @@ bool parse_unit(lexeme_t* fs, void(*Nonterminal)(void)) {
 	Nonterminal();
 	return lex->type == EOI && syntax_errors == 0;
 }
+void ConstDeclPrime() {
+	switch (lex->type) {
+		case IDENTIFIER:
+			match(IDENTIFIER);
+			match(OP_EQUALS);
+			Expression();
+			match(STM_END);
+			ConstDeclPrime();
+			break;
+		default:
+			return; //ConstDeclPrime -> epsilon
+	}
+}
+void ConstDecl() {
+	switch (lex->type) {
+		case IDENTIFIER:
+			match(IDENTIFIER);
+			match(OP_EQUALS);
+			Expression();
+			match(STM_END);
+			ConstDeclPrime();
+			break;
+		default:
+			return; //ConstDecl -> epsilon
+	}
+}
+void ConstantDeclarations() {
+	switch (lex->type) {
+		case KW_CONST:
+			match(KW_CONST);
+			ConstDecl();
+			break;
+		default:
+			syntax_error(1, KW_CONST);
+	}
+}
 void Grouping() {
 	switch (lex->type) {
 		case KW_IF: //G -> if cond then Block G

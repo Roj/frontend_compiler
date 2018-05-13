@@ -10,6 +10,14 @@ void parser_test(char* input, void(*Nonterminal)(void)) {
 	ck_assert_msg(parse_unit(lex, Nonterminal), errormsg);
 }
 
+void parser_neg_test(char* input, void(*Nonterminal)(void)) {
+	bool unfinished_comment = false;
+	lexeme_t* lex = process_string(input, &unfinished_comment);
+	char errormsg[1000];
+	sprintf(errormsg, "Should not pass: %s", input);
+	ck_assert_msg(! parse_unit(lex, Nonterminal), errormsg);
+}
+
 START_TEST (parser_assignment_test) {
 	char* input = "a := 3;";
 	bool unfinished_comment = false;
@@ -209,6 +217,26 @@ START_TEST (parser_while_simple_multiline) {
 }
 END_TEST
 
+START_TEST (parser_constant_declaration_simple) {
+	parser_test("const a = 10;", ConstantDeclarations);
+}
+END_TEST
+
+START_TEST (parser_constant_declaration_expr) {
+	parser_test("const a = $10+5*(3*15-9*&10);", ConstantDeclarations);
+}
+END_TEST
+
+START_TEST (parser_constant_declaration_many) {
+	parser_test("const a = 3; b=4;", ConstantDeclarations);
+}
+END_TEST
+
+START_TEST (parser_constant_declaration_invalid) {
+	parser_neg_test("const ;", ConstantDeclarations);
+	parser_neg_test("const a=3;b=4", ConstantDeclarations);
+}
+END_TEST
 
 Suite* parser_suite(void) {
 	Suite* suite = suite_create("Syntactical analyzer");
@@ -241,6 +269,10 @@ Suite* parser_suite(void) {
 	tcase_add_test(tc_core, parser_while_simple_oneline);
 	tcase_add_test(tc_core, parser_while_expression_oneline);
 	tcase_add_test(tc_core, parser_while_simple_multiline);
+	tcase_add_test(tc_core, parser_constant_declaration_simple);
+	tcase_add_test(tc_core, parser_constant_declaration_expr);
+	tcase_add_test(tc_core, parser_constant_declaration_many);
+	tcase_add_test(tc_core, parser_constant_declaration_invalid);
 	suite_add_tcase(suite, tc_core);
 	return suite;
 }

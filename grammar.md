@@ -5,10 +5,10 @@ Therefore we have:
 ```
 Program -> PROGRAM IDENTIFIER; ConstantDeclarations TypeDeclarations BEGIN Grouping END.
 
-ConstantDeclarations -> const ConstDecl;
+ConstantDeclarations -> const ConstDecl
 ConstantDeclarations -> epsilon
-ConstDecl -> IDENTIFIER = NUMBER  ConstDeclPrime
-ConstDeclPrime -> ; IDENTIFIER = Expression
+ConstDecl -> IDENTIFIER = Expression; ConstDeclPrime
+ConstDeclPrime -> IDENTIFIER = Expression;
 ConstDeclPrime -> epsilon
 
 TypeDeclarations -> VAR TypeDecl;
