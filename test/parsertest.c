@@ -122,6 +122,11 @@ START_TEST (parser_statement_funccall_manyargs_expr) {
 }
 END_TEST
 
+START_TEST (parser_statement_funccall_manyargs_literal) {
+	parser_test("writeln(a,-b,'abc?ak_if then else');", Grouping);
+}
+END_TEST
+
 START_TEST (parser_statement_array_assignment) {
 	parser_test("a[3]:=b;", Grouping);
 }
@@ -300,6 +305,7 @@ Suite* parser_suite(void) {
 	tcase_add_test(tc_core, parser_statement_funccall_empty);
 	tcase_add_test(tc_core, parser_statement_funccall_manyargs);
 	tcase_add_test(tc_core, parser_statement_funccall_manyargs_expr);
+	tcase_add_test(tc_core, parser_statement_funccall_manyargs_literal);
 	tcase_add_test(tc_core, parser_statement_array_assignment);
 	tcase_add_test(tc_core, parser_if_oneline_test);
 	tcase_add_test(tc_core, parser_if_oneline_else_manyline_test);

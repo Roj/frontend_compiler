@@ -232,11 +232,30 @@ void ForDirection() {
 			syntax_error(2, KW_TO, KW_DOWNTO);
 	}
 }
+void ExprOrLiteral() {
+	switch (lex->type) {
+		case LITERAL:
+			match(LITERAL);
+			break;
+		//First of expression
+		case OP_NOT:
+		case OP_MINUS:
+		case NUMBER:
+		case IDENTIFIER:
+		case PARENS_START:
+			Expression();
+			break;
+		default:
+			syntax_error(6, LITERAL, OP_NOT, OP_MINUS, NUMBER, IDENTIFIER, 
+				PARENS_START);
+			return;
+	}
+}
 void RestArgs() {
 	switch (lex->type) {
 		case COMMA:
 			match(COMMA);
-			Expression();
+			ExprOrLiteral();
 			RestArgs();
 			break;
 		default: //RestArgs->epsilon
@@ -245,13 +264,14 @@ void RestArgs() {
 }
 void Arguments() {
 	switch (lex->type) {
-		//First of Expression.
+		//First of ExprOrLiteral
+		case LITERAL:
 		case OP_NOT:
 		case OP_MINUS:
 		case NUMBER:
 		case IDENTIFIER:
 		case PARENS_START:
-			Expression();
+			ExprOrLiteral();
 			RestArgs();
 			break;
 		default: //Arguments->epsilon

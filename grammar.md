@@ -64,9 +64,12 @@ FuncCallOrArrayIndex -> [ Expression ]
 FuncCallOrArrayIndex -> epsilon
 FuncCall -> (Arguments)
 FuncCall -> epsilon
-Arguments-> Expression, Arguments
-Arguments-> Expression
+Arguments-> ExprOrLiteral RestArgs
+RestArgs -> , ExprOrLiteral RestArgs
 Arguments-> epsilon
+RestArgs -> epsilon
+ExprOrLiteral -> Expression
+ExprOrLiteral -> LITERAL
 ```
 
 ## Expressions -- LL1 conversion
@@ -91,8 +94,10 @@ Factor -> NUMBER
 Factor -> (Expression)
 FuncCall -> (Arguments)
 FuncCall -> epsilon
-Arguments-> Expression RestArgs
-RestArgs -> , Expression RestArgs
+Arguments-> ExprOrLiteral RestArgs
+RestArgs -> , ExprOrLiteral RestArgs
 Arguments-> epsilon
 RestArgs -> epsilon
+ExprOrLiteral -> Expression
+ExprOrLiteral -> LITERAL
 ```
