@@ -1,13 +1,17 @@
 #include "parser.h"
 #include <stdio.h>
 #include <stdarg.h>
+#define syntax_error(...) syntax_error_sp(__func__, __FILE__, __LINE__, __VA_ARGS__)
+#define match(...) match_sp(__func__, __FILE__, __LINE__, __VA_ARGS__)
 static lexeme_t* lex;
 static int syntax_errors = 0;
 
-void syntax_error(int num_options, ...) {
+void syntax_error_sp(const char* func, char* file, 
+	int line, int num_options, ...) {
 	va_list arguments; 
 	va_start (arguments, num_options); 
-	printf("Unexpected lexeme of type %s, expected ", lex2str(lex));
+	printf("Line %d: unexpected lexeme of type %s, expected ", 
+		lex->line_num, lex2str(lex));
 	for (int i = 0; i < num_options; i++) {
 		//TODO: add a function that converts type to actual symbol
 		//e.g. PARENS_START-> (
@@ -17,25 +21,29 @@ void syntax_error(int num_options, ...) {
 		else if (i == num_options-2)
 			printf(", or ");
 	}
-	printf(".\n");
+	printf(" in non-terminal %s, at %s:%d.\n", func, file, line);
 	va_end(arguments);
 	syntax_errors++;
 }
 void next_symb() {
 	lex = lex->next;
 }
-void match(lexeme_type_t type) {
+void match_sp(const char* func, char* file, int line, lexeme_type_t type) {
 	if (lex->type == type) {
 		next_symb();
 	} else {
-		syntax_error(1, type);
+		syntax_error_sp(func, file, line, 1, type);
 	}
 }
 //Returns true if the input was correctly processed
 bool parse(lexeme_t* first_symbol) {
 	syntax_errors = 0;
 	lex = first_symbol;
-	Grouping();
+	Program();
+	if (lex->type != EOI) {
+		fprintf(stderr, "End is not EOI, is %s in line %d.\n", 
+			lex2str(lex), lex->line_num);
+	}
 	return lex->type == EOI && syntax_errors == 0;
 }
 bool parse_unit(lexeme_t* fs, void(*Nonterminal)(void)) {
@@ -168,6 +176,7 @@ void TypeDeclarations() {
 		case KW_VAR:
 			match(KW_VAR);
 			TypeDecl();
+			TypeDeclarations();
 			break;
 		default:
 			return; //TypeDeclarations -> epsilon
@@ -411,6 +420,19 @@ void TermPrime() {
 		//No default error: TermPrime -> epsilon
 	}
 }
+void FuncCallOrArrayIndex() {
+	switch (lex->type) {
+		case BRACKET_START:
+			match(BRACKET_START);
+			Expression();
+			match(BRACKET_END);
+			break;
+		case PARENS_START:
+			FuncCall();
+		default:
+			return;
+	}
+}
 void Factor() {
 	switch (lex->type) {
 		case OP_NOT:
@@ -419,7 +441,7 @@ void Factor() {
 			break;
 		case IDENTIFIER:
 			match(IDENTIFIER);
-			FuncCall();
+			FuncCallOrArrayIndex();
 			break;
 		case OP_MINUS:
 			match(OP_MINUS);

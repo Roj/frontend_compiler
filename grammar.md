@@ -11,7 +11,7 @@ ConstDecl -> IDENTIFIER = Expression; ConstDeclPrime
 ConstDeclPrime -> IDENTIFIER = Expression;
 ConstDeclPrime -> epsilon
 
-TypeDeclarations -> VAR TypeDecl
+TypeDeclarations -> VAR TypeDecl TypeDeclarations
 TypeDeclarations -> epsilon
 TypeDecl -> Variables: Type; TypeDeclPrime
 TypeDeclPrime -> Variables: Type;
@@ -55,10 +55,13 @@ Expression -> Term
 Term -> Term * Factor
 Term -> Term / Factor
 Term -> Factor
-Factor -> IDENTIIFER FuncCall
+Factor -> IDENTIIFER FuncCallOrArrayIndex
 Factor -> NUMBER
 Factor -> (Expression)
 Factor -> -Factor
+FuncCallOrArrayIndex -> FuncCall
+FuncCallOrArrayIndex -> [ Expression ]
+FuncCallOrArrayIndex -> epsilon
 FuncCall -> (Arguments)
 FuncCall -> epsilon
 Arguments-> Expression, Arguments
