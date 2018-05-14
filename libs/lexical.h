@@ -62,6 +62,7 @@ typedef struct lexeme {
 		double dvalue;
 		int value;
 	} data;
+	int line_num;
 	struct lexeme* next;
 } lexeme_t;
 
@@ -69,6 +70,7 @@ char* lex2str(lexeme_t* lex);
 char* lextype2str(lexeme_type_t type);
 
 lexeme_t* process_string(char* str, bool* unfinished_comment);
+lexeme_t* process_file(char* filename);
 
 void delete_lexemes(lexeme_t* start);
 int get_error_count();

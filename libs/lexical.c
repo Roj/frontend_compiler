@@ -5,6 +5,7 @@
 #define IDENT_STRING_SIZE 20 //hardcoded for now
 
 static int error_count = 0;
+static int line_num = 0;
 
 char* lex_str_map[EOI+1] = {
 	"UNDEF",
@@ -144,6 +145,7 @@ bool is_grouping(char c) {
 
 lexeme_t* new_lexeme() {
 	lexeme_t* new = calloc(1, sizeof(lexeme_t));
+	new->line_num = line_num;
 	assert(new != NULL);
 	return new;
 }
@@ -415,6 +417,29 @@ void delete_lexemes(lexeme_t* current) {
 		current = current->next;
 		free(old);
 	}
+}
+lexeme_t* process_file(char* filename) {
+	FILE* file = fopen(filename, "r");
+	assert(file != NULL);
+	lexeme_t* previous_last = NULL;
+	lexeme_t* start = NULL;
+	char line[3000];
+	bool unfinished_comment = false;
+	while (fgets(line, 2999, file) != NULL) {
+		line_num++;
+		if (! start) {
+			start = process_string(line, &unfinished_comment);
+			previous_last = start;
+			continue;
+		}
+		for (lexeme_t* lex = previous_last; lex->type != EOI; lex = lex->next) {
+			previous_last = lex;
+		}
+		delete_lexemes(previous_last->next);
+		previous_last->next = process_string(line, &unfinished_comment);
+	}
+	line_num = 0;
+	return start;
 }
 
 char* lex2str(lexeme_t* lex) {
