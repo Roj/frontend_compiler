@@ -63,11 +63,11 @@ START_TEST (lexeme_hex_syntax_error_test) {
 END_TEST
 
 START_TEST (lexeme_identifier_test) {
-	char* input = "hola";
+	char* input = "hola_123";
 	bool unfinished_comment = false;
 	lexeme_t* lex = process_string(input, &unfinished_comment);
 	ck_assert_msg(lex->type == IDENTIFIER, "Type is not identifier");
-	ck_assert_str_eq(lex->data.name, "hola");
+	ck_assert_str_eq(lex->data.name, "hola_123");
 }
 END_TEST
 
@@ -94,6 +94,14 @@ START_TEST (lexeme_unexpected_identifier_test) {
 }
 END_TEST
 
+START_TEST (lexeme_literal_test) {
+	char* input = "'4?if=kabcde_!'";
+	bool unfinished_comment = false;
+	lexeme_t* lex = process_string(input, &unfinished_comment);
+	ck_assert_msg(lex->type == LITERAL, "Type is not LITERAL");
+	ck_assert_str_eq(lex->data.name, "4?if=kabcde_!");
+}
+END_TEST
 void check_types(lexeme_type_t types[], lexeme_t* lex) {
 	int i = 0;
 	while (lex && lex->type != EOI) {
@@ -265,6 +273,7 @@ Suite* lexical_suite(void) {
 	tcase_add_test(tc_core, lexeme_identifier_test);
 	tcase_add_test(tc_core, lexeme_2identifier_test);
 	tcase_add_test(tc_core, lexeme_unexpected_identifier_test);
+	tcase_add_test(tc_core, lexeme_literal_test);
 	tcase_add_test(tc_core, lexeme_keyword_test);
 	tcase_add_test(tc_core, lexeme_expression_test);
 	tcase_add_test(tc_core, lexeme_grouping_test);

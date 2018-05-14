@@ -3,7 +3,7 @@
 #include <assert.h>
 
 #define IDENT_STRING_SIZE 20 //hardcoded for now
-
+#define LITERAL_SIZE 30
 static int error_count = 0;
 static int line_num = 0;
 
@@ -11,6 +11,7 @@ char* lex_str_map[EOI+1] = {
 	"UNDEF",
 	"NUMBER",
 	"IDENTIFIER",
+	"LITERAL",
 	"OP_PLUS",
 	"OP_MINUS",
 	"OP_DIV",
@@ -199,7 +200,7 @@ int read_identifier(char* str, int i, lexeme_t* actual) {
 	actual->data.name = malloc(sizeof(char) * (IDENT_STRING_SIZE + 1));
 	assert(actual->data.name != NULL);
 	int identlen = 0;
-	while (is_alphanumeric(str[i])) {
+	while (is_alphanumeric(str[i]) || str[i] == '_') {
 		//Complexity is quite big rn but w/e, optimizations come later.
 		if (identlen == IDENT_STRING_SIZE) {
 			lexical_error(str, i, "Identifier name too long.");
@@ -210,6 +211,25 @@ int read_identifier(char* str, int i, lexeme_t* actual) {
 	}
 	actual->data.name[identlen] = '\0';
 	return i;
+}
+int read_literal(char* str, int i, lexeme_t* actual) {
+	actual->type = LITERAL;
+	actual->data.name = malloc(sizeof(char) * (LITERAL_SIZE +1));
+	assert(actual->data.name != NULL);
+	int litlen = 0;
+	for (i = i+1; str[i] && str[i] != '\''; i++) {
+		if (litlen == LITERAL_SIZE) {
+			lexical_error(str, i, "Literal too long.");
+			return i;
+		}
+		actual->data.name[litlen++] = str[i];
+	}
+	actual->data.name[litlen] = '\0';
+	if (!str[i]) {
+		lexical_error(str, i, "Unexpected end of input while reading string literal");
+		return i;
+	}
+	return i+1;
 }
 
 int find_comment_end(char* str, int i, bool* unfinished_comment) {
@@ -391,6 +411,9 @@ lexeme_t* process_string(char* str, bool* unfinished_comment) {
 			actual->type = STM_END;
 			finish_lexeme(&actual);
 			i++;
+		} else if (str[i] == '\'') {
+			i = read_literal(str, i, actual);
+			finish_lexeme(&actual);
 		} else {
 			lexical_error(str, i, "Unexpected token");	
 			i++;

@@ -10,6 +10,7 @@ typedef enum _lexeme_type_t {
 	UNDEF,
 	NUMBER,
 	IDENTIFIER,
+	LITERAL,
 	OP_PLUS,
 	OP_MINUS,
 	OP_DIV,
