@@ -40,6 +40,8 @@ typedef enum _lexeme_type_t {
 	KW_THEN,
 	KW_OF,
 	KW_FUNCTION,
+	KW_PROCEDURE,
+	KW_FORWARD,
 	KW_WHILE,
 	KW_ARRAY,
 	TYPE_INTEGER,

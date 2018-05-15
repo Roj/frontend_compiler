@@ -60,6 +60,7 @@ void Program() {
 			match(STM_END);
 			ConstantDeclarations();
 			TypeDeclarations();
+			FuncProcDeclarations();
 			match(BLOCK_START);
 			Grouping();
 			match(BLOCK_END);
@@ -180,6 +181,94 @@ void TypeDeclarations() {
 			break;
 		default:
 			return; //TypeDeclarations -> epsilon
+	}
+}
+void RestParams() {
+	switch (lex->type) {
+		case STM_END:
+			match(STM_END);
+			Variables();
+			match(ASSIGN_TYPE);
+			Type();
+			RestParams();
+			break;
+		default:
+			return; //RestParams -> epsilon
+	}
+}
+void ParamsList() {
+	switch (lex->type) {
+		case PARENS_START:
+			match(PARENS_START);
+			Variables();
+			match(ASSIGN_TYPE);
+			Type();
+			RestParams();
+			match(PARENS_END);
+			break;
+		default:
+			return; //ParamsList -> epsilon
+	}
+}
+void ForwardOrCode() {
+	switch (lex->type) {
+		case KW_FORWARD:
+			match(KW_FORWARD);
+			match(STM_END);
+			break;
+		case KW_VAR:
+		case BLOCK_START:
+			TypeDeclarations();
+			Block();
+			match(STM_END);
+			break;
+		default:
+			syntax_error(3, KW_FORWARD, KW_VAR, BLOCK_START);
+			return;
+	}
+}
+void ProcDecl() {
+	switch (lex->type) {
+		case IDENTIFIER:
+			match(IDENTIFIER);
+			ParamsList();
+			match(STM_END);
+			ForwardOrCode();
+			break;
+		default:
+			syntax_error(1, IDENTIFIER);
+			return;
+	}
+}
+void FuncDecl() {
+	switch (lex->type) {
+		case IDENTIFIER:
+			match(IDENTIFIER);
+			ParamsList();
+			match(ASSIGN_TYPE);
+			Type();
+			match(STM_END);
+			ForwardOrCode();
+			break;
+		default:
+			syntax_error(1, IDENTIFIER);
+			return;
+	}
+}
+void FuncProcDeclarations() {
+	switch (lex->type) {
+		case KW_PROCEDURE:
+			match(KW_PROCEDURE);
+			ProcDecl();
+			FuncProcDeclarations();
+			break;
+		case KW_FUNCTION:
+			match(KW_FUNCTION);
+			FuncDecl();
+			FuncProcDeclarations();
+			break;
+		default:
+			return; //FuncProcDeclarations -> epsilon
 	}
 }
 void Grouping() {

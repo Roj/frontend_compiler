@@ -9,6 +9,7 @@ bool parse_unit(lexeme_t* fs, void (*Nonterminal)(void));
 void Program();
 void ConstantDeclarations();
 void TypeDeclarations();
+void FuncProcDeclarations();
 void Grouping();
 void Statement();
 void Block();

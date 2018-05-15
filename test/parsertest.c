@@ -268,6 +268,66 @@ START_TEST (parser_var_declaration_array_minus) {
 }
 END_TEST
 
+START_TEST (parser_func_decl_noargs_novars) {
+	parser_test("function abc : integer; begin a:=b; end;", 
+		FuncProcDeclarations);
+}
+END_TEST
+
+START_TEST (parser_func_decl_onearg_novars) {
+	parser_test("function abc(a: integer) : integer; begin a:=b; end;", 
+		FuncProcDeclarations);
+}
+END_TEST
+
+START_TEST (parser_func_decl_manyarg_novars) {
+	parser_test("function abc(a,b: integer; c:integer) : integer; begin a:=b; end;", 
+		FuncProcDeclarations);
+}
+END_TEST
+
+START_TEST (parser_func_decl_noargs_vars) {
+	parser_test("function abc:integer; var a,b: integer;begin a:=b; end;", 
+		FuncProcDeclarations);
+}
+END_TEST
+
+START_TEST (parser_proc_decl_noargs_novars) {
+	parser_test("procedure abc; begin a:=b; end;", 
+		FuncProcDeclarations);
+}
+END_TEST
+
+START_TEST (parser_proc_decl_onearg_novars) {
+	parser_test("procedure abc(a: integer); begin a:=b; end;", 
+		FuncProcDeclarations);
+}
+END_TEST
+
+START_TEST (parser_proc_decl_manyarg_novars) {
+	parser_test("procedure abc(a,b: integer; c:integer); begin a:=b; end;", 
+		FuncProcDeclarations);
+}
+END_TEST
+
+START_TEST (parser_proc_decl_noargs_vars) {
+	parser_test("procedure abc; var a,b: integer;begin a:=b; end;", 
+		FuncProcDeclarations);
+}
+END_TEST
+
+START_TEST (parser_func_decl_forward) {
+	parser_test("function abc:integer; forward;", 
+		FuncProcDeclarations);
+}
+END_TEST
+
+START_TEST (parser_proc_decl_forward) {
+	parser_test("procedure abc; forward;", 
+		FuncProcDeclarations);
+}
+END_TEST
+
 START_TEST (parser_program_empty) {
 	parser_test("program abc; begin end.", Program);
 }
@@ -329,6 +389,16 @@ Suite* parser_suite(void) {
 	tcase_add_test(tc_core, parser_var_declaration_multiple_comma);
 	tcase_add_test(tc_core, parser_var_declaration_array);
 	tcase_add_test(tc_core, parser_var_declaration_array_minus);
+	tcase_add_test(tc_core, parser_func_decl_noargs_novars);
+	tcase_add_test(tc_core, parser_func_decl_onearg_novars);
+	tcase_add_test(tc_core, parser_func_decl_manyarg_novars);
+	tcase_add_test(tc_core, parser_func_decl_noargs_vars);
+	tcase_add_test(tc_core, parser_func_decl_forward);
+	tcase_add_test(tc_core, parser_proc_decl_noargs_novars);
+	tcase_add_test(tc_core, parser_proc_decl_onearg_novars);
+	tcase_add_test(tc_core, parser_proc_decl_manyarg_novars);
+	tcase_add_test(tc_core, parser_proc_decl_noargs_vars);
+	tcase_add_test(tc_core, parser_proc_decl_forward);
 	tcase_add_test(tc_core, parser_program_empty);
 	tcase_add_test(tc_core, parser_program_empty_type);
 	tcase_add_test(tc_core, parser_program_empty_const);

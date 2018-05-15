@@ -3,14 +3,13 @@ Therefore we have:
 
 ## Control structures
 ```
-Program -> PROGRAM IDENTIFIER; ConstantDeclarations TypeDeclarations BEGIN Grouping END.
+Program -> PROGRAM IDENTIFIER; ConstantDeclarations TypeDeclarations FuncProcDeclarations BEGIN Grouping END.
 
 ConstantDeclarations -> const ConstDecl
 ConstantDeclarations -> epsilon
 ConstDecl -> IDENTIFIER = Expression; ConstDeclPrime
 ConstDeclPrime -> IDENTIFIER = Expression;
 ConstDeclPrime -> epsilon
-
 TypeDeclarations -> VAR TypeDecl TypeDeclarations
 TypeDeclarations -> epsilon
 TypeDecl -> Variables: Type; TypeDeclPrime
@@ -21,6 +20,18 @@ VariablesPrime -> , IDENTIFIER VariablesPrime
 VariablesPrime -> epsilon
 Type -> INTEGER
 Type -> ARRAY [ Expression .. Expression ] OF INTEGER
+
+FuncProcDeclarations -> KW_PROCEDURE ProcDecl FuncProcDeclarations
+FuncProcDeclarations -> KW_FUNCTION FuncDecl FuncProcDeclarations
+FuncProcDeclarations -> epsilon
+ProcDecl -> IDENTIFIER ParamsList; ForwardOrCode 
+FuncDecl -> IDENTIFIER ParamsList : Type; ForwardOrCode
+ForwardOrCode -> KW_FORWARD;
+ForwardOrCode -> TypeDeclarations Block;
+ParamsList -> (Variables : Type RestParams)
+ParamsList -> epsilon
+RestParams -> ; Variables : Type RestParams
+RestParams -> epsilon
 
 Grouping -> if Expression then Block Else Grouping
 Grouping -> for Identifier := Expression ForDirection Expression do Block Grouping
