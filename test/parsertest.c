@@ -46,7 +46,7 @@ START_TEST (parser_assignment_simple_expr_test) {
 END_TEST
 
 START_TEST (parser_compound_expr_test) {
-	char* input = "3+3+(4*2)";
+	char* input = "(3+3+(4*2) mod 4) div 3";
 	bool unfinished_comment = false;
 	lexeme_t* lex = process_string(input, &unfinished_comment);
 	ck_assert_msg(parse_unit(lex, Expression), 

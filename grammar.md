@@ -42,6 +42,7 @@ Block -> Statement;
 
 ## Expressions
 ```
+Expression -> Expression MOD Term
 Expression -> Expression + Term
 Expression -> Expression - Term
 Expression -> Expression >= Term
@@ -54,6 +55,7 @@ Expression -> Expression OR Term
 Expression -> Term
 Term -> Term * Factor
 Term -> Term / Factor
+Term -> Term INTDIV Factor
 Term -> Factor
 Factor -> IDENTIIFER FuncCallOrArrayIndex
 Factor -> NUMBER
@@ -75,6 +77,7 @@ ExprOrLiteral -> LITERAL
 ## Expressions -- LL1 conversion
 ```
 Expression -> Term ExpressionPrime
+ExpressionPrime -> MOD Term ExpressionPrime
 ExpressionPrime -> >= Term ExpressionPrime
 ExpressionPrime -> <= Term ExpressionPrime
 ExpressionPrime -> > Term ExpressionPrime
@@ -87,6 +90,7 @@ ExpressionPrime -> epsilon
 Term -> Factor TermPrime
 TermPrime -> * Factor TermPrime
 TermPrime -> / Factor TermPrime
+TermPrime -> INTDIV Factor TermPrime
 TermPrime -> epsilon
 Factor -> ! Factor
 Factor -> IDENTIFIER FuncCall

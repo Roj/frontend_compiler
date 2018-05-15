@@ -364,6 +364,11 @@ void Expression() {
 }
 void ExpressionPrime() {
 	switch (lex->type) {
+		case OP_MOD:
+			match(OP_MOD);
+			Term();
+			ExpressionPrime();
+			break;
 		case OP_GT:
 			match(OP_GT);
 			Term();
@@ -433,6 +438,11 @@ void TermPrime() {
 		case OP_DIV:
 			match(OP_DIV);
 			Factor();
+			TermPrime();
+			break;
+		case OP_INTDIV:
+			match(OP_INTDIV);
+			Term();
 			TermPrime();
 			break;
 		default:
