@@ -49,10 +49,8 @@ IdentifierStatement -> [ Expression ] := Expression
 IdentifierStatement -> (Arguments)
 Else -> ELSE Block
 Else -> epsilon
-Block -> begin GroupingInBlock end;
+Block -> begin Grouping end;
 Block -> Statement;
-GroupingInBlock -> Grouping Statement
-//Block -> Statement
 ```
 
 ## Expressions
