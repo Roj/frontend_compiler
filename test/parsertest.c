@@ -27,15 +27,6 @@ START_TEST (parser_assignment_test) {
 }
 END_TEST
 
-START_TEST (parser_assignment_nosemic_test) {
-	char* input = "a := 3";
-	bool unfinished_comment = false;
-	lexeme_t* lex = process_string(input, &unfinished_comment);
-	ck_assert_msg(!parse_unit(lex, Grouping), 
-		"Grammar does not detect missing semicolon in statement a=3");
-}
-END_TEST
-
 START_TEST (parser_assignment_simple_expr_test) {
 	char* input = "a := 3+3";
 	bool unfinished_comment = false;
@@ -134,6 +125,16 @@ END_TEST
 
 START_TEST (parser_statement_exit) {
 	parser_test("exit;", Grouping);
+}
+END_TEST
+
+START_TEST (parser_block_nosemionlast_test) {
+	parser_test("begin a:=b; a:=b end;", Block);
+}
+END_TEST
+
+START_TEST (parser_block_missing_semi_test) {
+	parser_neg_test("begin a:=b a:=b end;", Block);
 }
 END_TEST
 
@@ -356,7 +357,6 @@ Suite* parser_suite(void) {
 	Suite* suite = suite_create("Syntactical analyzer");
 	TCase* tc_core = tcase_create("Core");
 	tcase_add_test(tc_core, parser_assignment_test);
-	tcase_add_test(tc_core, parser_assignment_nosemic_test);
 	tcase_add_test(tc_core, parser_assignment_simple_expr_test);
 	tcase_add_test(tc_core, parser_compound_expr_test);
 	tcase_add_test(tc_core, parser_complete_compound_expr_test);
@@ -372,6 +372,8 @@ Suite* parser_suite(void) {
 	tcase_add_test(tc_core, parser_statement_funccall_manyargs_literal);
 	tcase_add_test(tc_core, parser_statement_array_assignment);
 	tcase_add_test(tc_core, parser_statement_exit);
+	tcase_add_test(tc_core, parser_block_nosemionlast_test);
+	tcase_add_test(tc_core, parser_block_missing_semi_test);
 	tcase_add_test(tc_core, parser_if_oneline_test);
 	tcase_add_test(tc_core, parser_if_oneline_else_manyline_test);
 	tcase_add_test(tc_core, parser_if_oneline_else_oneline_test);

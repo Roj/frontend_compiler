@@ -270,6 +270,15 @@ void FuncProcDeclarations() {
 			return; //FuncProcDeclarations -> epsilon
 	}
 }
+void GroupingPrime() {
+	switch (lex->type) {
+		case STM_END:
+			match(STM_END);
+			Grouping();
+		default:
+			return; //GroupingPrime -> epsilon
+	}
+}
 void Grouping() {
 	switch (lex->type) {
 		case KW_IF: //G -> if cond then Block G
@@ -301,8 +310,7 @@ void Grouping() {
 		case KW_EXIT:
 		case IDENTIFIER: //first of Statement
 			Statement();
-			match(STM_END);
-			Grouping();
+			GroupingPrime();
 			break;
 		default:
 			return;

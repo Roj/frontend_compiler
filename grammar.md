@@ -36,8 +36,10 @@ RestParams -> epsilon
 Grouping -> if Expression then Block Else Grouping
 Grouping -> for Identifier := Expression ForDirection Expression do Block Grouping
 Grouping -> while Expression do Block Grouping
-Grouping -> Statement; Grouping
+Grouping -> Statement GroupingPrime
 Grouping -> epsilon
+GroupingPrime -> ; Grouping
+GroupingPrime -> epsilon //the last statement can have no ;
 ForDirection -> TO
 ForDirection -> DOWNTO
 Statement -> KW_EXIT
@@ -47,8 +49,9 @@ IdentifierStatement -> [ Expression ] := Expression
 IdentifierStatement -> (Arguments)
 Else -> ELSE Block
 Else -> epsilon
-Block -> begin Grouping end;
+Block -> begin GroupingInBlock end;
 Block -> Statement;
+GroupingInBlock -> Grouping Statement
 //Block -> Statement
 ```
 
