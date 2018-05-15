@@ -220,6 +220,7 @@ void ForwardOrCode() {
 		case BLOCK_START:
 			TypeDeclarations();
 			Block();
+			match(STM_END);
 			break;
 		default:
 			syntax_error(3, KW_FORWARD, KW_VAR, BLOCK_START);
@@ -287,7 +288,7 @@ void Grouping() {
 			match(KW_THEN);
 			Block();
 			Else();
-			Grouping();
+			GroupingPrime();
 			break;
 		case KW_FOR:
 			match(KW_FOR);
@@ -298,14 +299,14 @@ void Grouping() {
 			Expression();
 			match(KW_DO);
 			Block();
-			Grouping();
+			GroupingPrime();
 			break;
 		case KW_WHILE:
 			match(KW_WHILE);
 			Expression();
 			match(KW_DO);
 			Block();
-			Grouping();
+			GroupingPrime();
 			break;
 		case KW_EXIT:
 		case IDENTIFIER: //first of Statement
@@ -438,14 +439,14 @@ void Block() {
 			match(BLOCK_START);
 			Grouping();
 			match(BLOCK_END);
-			match(STM_END);
 			break;
-		case IDENTIFIER: //first of Statement
+		//First of Statement
+		case KW_EXIT:
+		case IDENTIFIER:
 			Statement();
-			match(STM_END);
 			break;
 		default:
-			syntax_error(2, BLOCK_START, IDENTIFIER);
+			syntax_error(3, BLOCK_START, IDENTIFIER, KW_EXIT);
 	}
 }
 void Expression() {

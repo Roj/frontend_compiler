@@ -33,9 +33,9 @@ ParamsList -> epsilon
 RestParams -> ; Variables : Type RestParams
 RestParams -> epsilon
 
-Grouping -> if Expression then Block Else Grouping
-Grouping -> for Identifier := Expression ForDirection Expression do Block Grouping
-Grouping -> while Expression do Block Grouping
+Grouping -> if Expression then Block Else GroupingPrime
+Grouping -> for Identifier := Expression ForDirection Expression do Block GroupingPrime
+Grouping -> while Expression do Block GroupingPrime
 Grouping -> Statement GroupingPrime
 Grouping -> epsilon
 GroupingPrime -> ; Grouping
@@ -49,8 +49,8 @@ IdentifierStatement -> [ Expression ] := Expression
 IdentifierStatement -> (Arguments)
 Else -> ELSE Block
 Else -> epsilon
-Block -> begin Grouping end;
-Block -> Statement;
+Block -> begin Grouping end
+Block -> Statement
 ```
 
 ## Expressions

@@ -129,7 +129,7 @@ START_TEST (parser_statement_exit) {
 END_TEST
 
 START_TEST (parser_block_nosemionlast_test) {
-	parser_test("begin a:=b; a:=b end;", Block);
+	parser_test("begin a:=b; a:=b end", Block);
 }
 END_TEST
 
@@ -157,38 +157,38 @@ START_TEST (parser_if_manyline_test) {
 END_TEST
 
 START_TEST (parser_if_oneline_else_oneline_test) {
-	char* input = "if a>b then b:=a; else a:=b;";
+	char* input = "if a>b then b:=a else a:=b;";
 	bool unfinished_comment = false;
 	lexeme_t* lex = process_string(input, &unfinished_comment);
 	ck_assert_msg(parse_unit(lex, Grouping),
-		"Failed: if a>b then b:=a; else a:=b;");
+		"Failed: if a>b then b:=a else a:=b;");
 }
 END_TEST
 
 START_TEST (parser_if_manyline_else_oneline_test) {
-	char* input = "if a>b then begin b:=a; b:=a; end; else b:=a;";
+	char* input = "if a>b then begin b:=a; b:=a; end else b:=a;";
 	bool unfinished_comment = false;
 	lexeme_t* lex = process_string(input, &unfinished_comment);
 	ck_assert_msg(parse_unit(lex, Grouping),
-		"Failed: if a>b then begin b:=a; b:=a; end; else b:=a;");
+		"Failed: if a>b then begin b:=a; b:=a; end else b:=a;");
 }
 END_TEST
 
 START_TEST (parser_if_manyline_else_manyline_test) {
-	char* input = "if a>b then begin b:=a; b:=a; end; else begin b:=a; b:=a; end;";
+	char* input = "if a>b then begin b:=a; b:=a; end else begin b:=a; b:=a; end;";
 	bool unfinished_comment = false;
 	lexeme_t* lex = process_string(input, &unfinished_comment);
 	ck_assert_msg(parse_unit(lex, Grouping),
-		"Failed: if a>b then begin b:=a; b:=a; end; else begin b:=a; b:=a; end;");
+		"Failed: if a>b then begin b:=a; b:=a; end else begin b:=a; b:=a; end;");
 }
 END_TEST
 
 START_TEST (parser_if_oneline_else_manyline_test) {
-	char* input = "if a>b then b:=a; else begin b:=a; b:=a; end;";
+	char* input = "if a>b then b:=a else begin b:=a; b:=a; end;";
 	bool unfinished_comment = false;
 	lexeme_t* lex = process_string(input, &unfinished_comment);
 	ck_assert_msg(parse_unit(lex, Grouping),
-		"Failed: if a>b then b:=a; else begin b:=a; b:=a; end;");
+		"Failed: if a>b then b:=a else begin b:=a; b:=a; end;");
 }
 END_TEST
 
