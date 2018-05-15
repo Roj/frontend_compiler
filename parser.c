@@ -8,7 +8,9 @@
 int main(int argc, char* argv[]) {
 	char line[3000];
 	if (argc == 3 && strcmp(argv[1], "--file") == 0) {
-		printf("Parsing file %s\n", argv[2]);
+		//It is necessary to print this out with no buffering, so if there are
+		//any errors this message is shown first
+		fprintf(stderr, "Parsing file %s\n", argv[2]);
 		lexeme_t* start = process_file(argv[2]);
 		if (parse(start)) {
 			printf("Parsed correctly!\n");

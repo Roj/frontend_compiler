@@ -115,12 +115,12 @@ void check_types(lexeme_type_t types[], lexeme_t* lex) {
 }
 
 START_TEST (lexeme_keyword_test) {
-	char* input = "abc if for to downto do begin end program var integer while of function procedure forward mod div array const";
-	lexeme_type_t types[20] = {IDENTIFIER, KW_IF, KW_FOR,
+	char* input = "abc if for to downto do begin end program var integer while of function procedure forward mod div array const exit";
+	lexeme_type_t types[21] = {IDENTIFIER, KW_IF, KW_FOR,
 		KW_TO, KW_DOWNTO, KW_DO, BLOCK_START, BLOCK_END, 
 		KW_PROGRAM, KW_VAR, TYPE_INTEGER,
 		KW_WHILE,KW_OF, KW_FUNCTION, KW_PROCEDURE, KW_FORWARD,
-		OP_MOD, OP_INTDIV, KW_ARRAY, KW_CONST};
+		OP_MOD, OP_INTDIV, KW_ARRAY, KW_CONST, KW_EXIT};
 	bool unfinished_comment = false;
 	lexeme_t* lex = process_string(input, &unfinished_comment);
 

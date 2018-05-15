@@ -132,6 +132,10 @@ START_TEST (parser_statement_array_assignment) {
 }
 END_TEST
 
+START_TEST (parser_statement_exit) {
+	parser_test("exit;", Grouping);
+}
+END_TEST
 
 START_TEST (parser_if_oneline_test) {
 	char* input = "if a>b then b:=a;";
@@ -367,6 +371,7 @@ Suite* parser_suite(void) {
 	tcase_add_test(tc_core, parser_statement_funccall_manyargs_expr);
 	tcase_add_test(tc_core, parser_statement_funccall_manyargs_literal);
 	tcase_add_test(tc_core, parser_statement_array_assignment);
+	tcase_add_test(tc_core, parser_statement_exit);
 	tcase_add_test(tc_core, parser_if_oneline_test);
 	tcase_add_test(tc_core, parser_if_oneline_else_manyline_test);
 	tcase_add_test(tc_core, parser_if_oneline_else_oneline_test);

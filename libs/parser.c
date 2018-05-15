@@ -10,18 +10,18 @@ void syntax_error_sp(const char* func, char* file,
 	int line, int num_options, ...) {
 	va_list arguments; 
 	va_start (arguments, num_options); 
-	printf("Line %d: unexpected lexeme of type %s, expected ", 
+	fprintf(stderr, "Line %d: unexpected lexeme of type %s, expected ", 
 		lex->line_num, lex2str(lex));
 	for (int i = 0; i < num_options; i++) {
 		//TODO: add a function that converts type to actual symbol
 		//e.g. PARENS_START-> (
-		printf("%s", lextype2str(va_arg(arguments, lexeme_type_t)));
+		fprintf(stderr, "%s", lextype2str(va_arg(arguments, lexeme_type_t)));
 		if (i < num_options-2)
-			printf(", ");
+			fprintf(stderr, ", ");
 		else if (i == num_options-2)
-			printf(", or ");
+			fprintf(stderr, ", or ");
 	}
-	printf(" in non-terminal %s, at %s:%d.\n", func, file, line);
+	fprintf(stderr, " in non-terminal %s, at %s:%d.\n", func, file, line);
 	va_end(arguments);
 	syntax_errors++;
 }
@@ -220,7 +220,6 @@ void ForwardOrCode() {
 		case BLOCK_START:
 			TypeDeclarations();
 			Block();
-			match(STM_END);
 			break;
 		default:
 			syntax_error(3, KW_FORWARD, KW_VAR, BLOCK_START);
@@ -299,6 +298,7 @@ void Grouping() {
 			Block();
 			Grouping();
 			break;
+		case KW_EXIT:
 		case IDENTIFIER: //first of Statement
 			Statement();
 			match(STM_END);
@@ -402,6 +402,9 @@ void IdentifierStatement() {
 }
 void Statement() {
 	switch (lex->type) {
+		case KW_EXIT:
+			match(KW_EXIT);
+			break;
 		case IDENTIFIER:
 			match(IDENTIFIER);
 			IdentifierStatement();
@@ -475,6 +478,16 @@ void ExpressionPrime() {
 			break;
 		case OP_LTE:
 			match(OP_LTE);
+			Term();
+			ExpressionPrime();
+			break;
+		case OP_NEQUALS:
+			match(OP_NEQUALS);
+			Term();
+			ExpressionPrime();
+			break;
+		case OP_EQUALS:
+			match(OP_EQUALS);
 			Term();
 			ExpressionPrime();
 			break;

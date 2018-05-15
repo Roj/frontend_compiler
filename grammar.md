@@ -40,6 +40,7 @@ Grouping -> Statement; Grouping
 Grouping -> epsilon
 ForDirection -> TO
 ForDirection -> DOWNTO
+Statement -> KW_EXIT
 Statement -> IDENTIFIER IdentifierStatement
 IdentifierStatement -> := Expression
 IdentifierStatement -> [ Expression ] := Expression
@@ -60,6 +61,8 @@ Expression -> Expression >= Term
 Expression -> Expression <= Term
 Expression -> Expression > Term
 Expression -> Expression < Term
+Expression -> Expression <> Term
+Expression -> Expression = Term
 Expression -> ! Expression
 Expression -> Expression AND Term
 Expression -> Expression OR Term
@@ -93,6 +96,8 @@ ExpressionPrime -> >= Term ExpressionPrime
 ExpressionPrime -> <= Term ExpressionPrime
 ExpressionPrime -> > Term ExpressionPrime
 ExpressionPrime -> < Term ExpressionPrime
+ExpressionPrime -> <> Term ExpressionPrime
+ExpressionPrime -> = Term ExpressionPrime
 ExpressionPrime -> + Term ExpressionPrime
 ExpressionPrime -> - Term ExpressionPrime
 ExpressionPrime -> and Term ExpressionPrime

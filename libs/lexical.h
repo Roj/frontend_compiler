@@ -44,6 +44,7 @@ typedef enum _lexeme_type_t {
 	KW_FORWARD,
 	KW_WHILE,
 	KW_ARRAY,
+	KW_EXIT,
 	TYPE_INTEGER,
 	COMMA,
 	ARRAY_RANGE,
