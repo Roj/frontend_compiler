@@ -61,6 +61,7 @@ void Program() {
 			ConstantDeclarations();
 			TypeDeclarations();
 			FuncProcDeclarations();
+			TypeDeclarations();
 			match(BLOCK_START);
 			Grouping();
 			match(BLOCK_END);

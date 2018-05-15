@@ -3,7 +3,9 @@ Therefore we have:
 
 ## Control structures
 ```
-Program -> PROGRAM IDENTIFIER; ConstantDeclarations TypeDeclarations FuncProcDeclarations BEGIN Grouping END.
+//The code examples do not follow the actual Pascal grammar, as they have
+//var declarations after functions. That is why we repeat them.
+Program -> PROGRAM IDENTIFIER; ConstantDeclarations TypeDeclarations FuncProcDeclarations TypeDeclarations BEGIN Grouping END.
 
 ConstantDeclarations -> const ConstDecl
 ConstantDeclarations -> epsilon
