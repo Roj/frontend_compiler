@@ -2,6 +2,8 @@
 #define _TREE_H
 #include "lexical.h"
 
+#define new_node(x) (x*) malloc_assert(sizeof(x))
+
 typedef enum expr_op {
 	MOD,
 	GTE,
@@ -27,136 +29,97 @@ typedef enum fordirection {
 	DOWN
 } fordirection_t;
 
-
-typedef enum nodetype {
-	NodeProgram,
-	NodeConstantDeclaration,
-	NodeTypeDeclaration,
-	NodeVariableType,
-	NodeVariables,
-	NodeFPDeclaration,
-	NodeFunction,
-	NodeProcedure,
-	NodeParams,
-	NodeGrouping,
-	NodeIf,
-	NodeFor,
-	NodeWhile,
-	NodeBlock,
-	NodeElse,
-	NodeExpression,
-	NodeStatement,
-	NodeExitStatement,
-	NodeAssign,
-	NodeArguments,
-	NodeTerm,
-	NodeExpressionPrime,
-	NodeTermPrime,
-	NodeFactor,
-	NodeFuncCall,
-	//NodeExpressionOperator,
-	//NodeFactorOperator,
-	NodeIdentifier,
-	NodeNumber,
-	NodeLiteral
-} node_type_t;
-
-typedef struct node {
-	node_type_t type;
-	void* elem;
-} node_t;
-
-typedef struct NodeProgram node_program_t;
-typedef struct NodeConstDecl node_constdecl_t;
-typedef struct NodeTypeDecl node_typedecl_t;
-typedef struct NodeVariableType node_variabletype_t;
-typedef struct NodeVariables node_variables_t;
-typedef struct NodeFPDecl node_fpdecl_t;
-typedef struct NodeGrouping node_grouping_t;
-typedef struct NodeFunction node_function_t;
-typedef struct NodeProcedure node_procedure_t;
-typedef struct NodeParams node_params_t;
-typedef struct NodeIf node_if_t;
-typedef struct NodeElse node_else_t;
-typedef struct NodeFor node_for_t;
-typedef struct NodeBlock node_block_t;
-typedef struct NodeWhile node_while_t;
-typedef struct NodeStatement node_statement_t;
-typedef struct NodeAssign node_assign_t;
-typedef struct NodeExpression node_expression_t;
-typedef struct NodeExpressionPrime node_expression_prime_t;
-typedef struct NodeTerm node_term_t;
-typedef struct NodeTermPrime node_term_prime_t;
-typedef struct NodeFactor node_factor_t;
-typedef struct NodeArguments node_arguments_t;
-typedef struct NodeNumber node_number_t;
-typedef struct NodeLiteral node_literal_t;
+typedef struct NodeProgram NodeProgram;
+typedef struct NodeConstDecl NodeConstDecl;
+typedef struct NodeTypeDecl NodeTypeDecl;
+typedef struct NodeVariableType NodeVariableType;
+typedef struct NodeVariables NodeVariables;
+typedef struct NodeFPDecl NodeFPDecl;
+typedef struct NodeGrouping NodeGrouping;
+typedef struct NodeFunction NodeFunction;
+typedef struct NodeProcedure NodeProcedure;
+typedef struct NodeParams NodeParams;
+typedef struct NodeIf NodeIf;
+typedef struct NodeElse NodeElse;
+typedef struct NodeFor NodeFor;
+typedef struct NodeBlock NodeBlock;
+typedef struct NodeWhile NodeWhile;
+typedef struct NodeStatement NodeStatement;
+typedef struct NodeAssign NodeAssign;
+typedef struct NodeExpression NodeExpression;
+typedef struct NodeExpressionPrime NodeExpressionPrime;
+typedef struct NodeTerm NodeTerm;
+typedef struct NodeTermPrime NodeTermPrime;
+typedef struct NodeFactor NodeFactor;
+typedef struct NodeArguments NodeArguments;
+typedef struct NodeNumber NodeNumber;
+typedef struct NodeLiteral NodeLiteral;
 
 struct NodeProgram {
 	char* name;
-	node_constdecl_t* constdecl;
-	node_typedecl_t* typedecl;
-	node_fpdecl_t* fpdecl;
-	node_typedecl_t* typedecl2;
-	node_grouping_t* grouping;
+	NodeConstDecl* constdecl;
+	NodeTypeDecl* typedecl;
+	NodeFPDecl* fpdecl;
+	NodeTypeDecl* typedecl2;
+	NodeGrouping* grouping;
 };
 
 struct NodeConstDecl {
 	char* name;
-	node_expression_t* expression;
-	node_constdecl_t* next_constdecl;
+	NodeExpression* expression;
+	NodeConstDecl* next_constdecl;
 };
 
 struct NodeTypeDecl {
-	node_variables_t* variables;
-	node_variabletype_t* type;
-	node_typedecl_t* next_typedecl;
+	NodeVariables* variables;
+	NodeVariableType* type;
+	NodeTypeDecl* next_typedecl;
 };
 
 struct NodeVariables {
 	char* name;
-	node_variables_t* next_variables;
+	NodeVariables* next_variables;
 };
 
 struct NodeFPDecl {
 	//Of course this could be a void*, but explicit is 
 	//better than implicit.
 	union _inner_fpdecl {
-		node_function_t* func;
-		node_procedure_t* proc;
+		NodeFunction* func;
+		NodeProcedure* proc;
 	} decl;
-	node_fpdecl_t* next_fpdecl;
+	NodeFPDecl* next_fpdecl;
 };
 
 struct NodeGrouping {
 	enum {IF, FOR, WHILE, STATEMENT} type;
 	union _inner_grouping {
-		node_if_t* _if;
-		node_for_t* _for;
-		node_while_t* _while;
-		node_statement_t* statement;
+		NodeIf* _if;
+		NodeFor* _for;
+		NodeWhile* _while;
+		NodeStatement* statement;
 	} inner;
-	node_grouping_t* next_grouping;
+	NodeGrouping* next_grouping;
 };
 
 struct NodeFunction {
 	char* name;
-	node_params_t* params;
-	node_typedecl_t* typedecl;
-	node_block_t* block;
+	NodeParams* params;
+	NodeTypeDecl* typedecl;
+	NodeBlock* block;
 };
 
 struct NodeProcedure {
 	char* name;
-	node_params_t* params;
-	node_typedecl_t* typedecl;
-	node_block_t* block;
+	NodeParams* params;
+	NodeTypeDecl* typedecl;
+	NodeBlock* block;
 };
 
 struct NodeParams {
-	node_variables_t* variables;
-	node_variabletype_t* type; //or assume int?
-	node_params_t* nextparam;
+	NodeVariables* variables;
+	NodeVariableType* type; //or assume int?
+	NodeParams* nextparam;
 };
 
 struct NodeVariableType {
@@ -166,34 +129,34 @@ struct NodeVariableType {
 };
 
 struct NodeIf {
-	node_expression_t* expr;
-	node_block_t* block;
-	node_else_t* _else;
+	NodeExpression* expr;
+	NodeBlock* block;
+	NodeElse* _else;
 };
 
 struct NodeElse {
-	node_block_t* block;
+	NodeBlock* block;
 };
 
 struct NodeFor {
 	char* id;
-	node_expression_t* start_expr;
+	NodeExpression* start_expr;
 	fordirection_t direction;
-	node_expression_t* stop_expr;
-	node_block_t* block;
+	NodeExpression* stop_expr;
+	NodeBlock* block;
 };
 
 struct NodeBlock {
 	bool is_grouping;
 	union _inner_block {
-		node_grouping_t* grouping;
-		node_statement_t* statement;
+		NodeGrouping* grouping;
+		NodeStatement* statement;
 	} inner;
 };
 
 struct NodeWhile {
-	node_expression_t* condition;
-	node_block_t* block;
+	NodeExpression* condition;
+	NodeBlock* block;
 };
 
 struct NodeStatement {
@@ -201,55 +164,55 @@ struct NodeStatement {
 	bool is_assign;
 	char* identifier;
 	union _inner_statement {
-		node_assign_t* assign;
-		node_arguments_t* func_call_args;
+		NodeAssign* assign;
+		NodeArguments* func_call_args;
 	} type;
 };
 
 struct NodeAssign {
-	node_expression_t* arr_index; //could be void (i.e. not array assign)
-	node_expression_t* expr;
+	NodeExpression* arr_index; //could be void (i.e. not array assign)
+	NodeExpression* expr;
 };
 
 struct NodeExpression {
-	node_term_t* term;
-	node_expression_prime_t* exp_prime;
+	NodeTerm* term;
+	NodeExpressionPrime* exp_prime;
 };
 
 struct NodeExpressionPrime {
 	expr_op_t op;
-	node_term_t* term;
-	node_expression_prime_t* exp_prime;
+	NodeTerm* term;
+	NodeExpressionPrime* exp_prime;
 };
 
 struct NodeTerm {
-	node_factor_t* factor;
-	node_term_prime_t* term_prime;
+	NodeFactor* factor;
+	NodeTermPrime* term_prime;
 };
 
 struct NodeTermPrime {
 	factor_op_t op;
-	node_factor_t* factor;
-	node_term_prime_t* term_prime;
+	NodeFactor* factor;
+	NodeTermPrime* term_prime;
 };
 
 struct NodeFactor {
 	enum {NEG, CALL, NUM, SUBEXPR} type;
 	union _inner_factor {
-		node_factor_t* negated_factor;
-		node_arguments_t* arguments;
-		node_number_t* num;
-		node_expression_t* subexpr;
+		NodeFactor* negated_factor;
+		NodeArguments* arguments;
+		NodeNumber* num;
+		NodeExpression* subexpr;
 	} fac;
 };
 
 struct NodeArguments {
 	bool is_expr;
 	union _inner_arguments {
-		node_expression_t* expr;
-		node_literal_t* literal;
+		NodeExpression* expr;
+		NodeLiteral* literal;
 	} arg;
-	node_arguments_t* nextarg;
+	NodeArguments* nextarg;
 };
 
 struct NodeNumber {
@@ -259,4 +222,5 @@ struct NodeLiteral {
 	char* value;
 };
 
+void* malloc_assert(size_t size);
 #endif

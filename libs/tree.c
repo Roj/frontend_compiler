@@ -1,4 +1,10 @@
 #include "tree.h"
 #include <assert.h>
-#define new_node(x) (struct x*) malloc(sizeof(struct x))
+
+void* malloc_assert(size_t size) {
+	void* mem = malloc(size);
+	assert(mem != NULL);
+	return mem;
+}
+
 
