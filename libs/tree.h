@@ -51,9 +51,11 @@ typedef struct NodeExpressionPrime NodeExpressionPrime;
 typedef struct NodeTerm NodeTerm;
 typedef struct NodeTermPrime NodeTermPrime;
 typedef struct NodeFactor NodeFactor;
+typedef struct NodeFuncCall NodeFuncCall;
 typedef struct NodeArguments NodeArguments;
 typedef struct NodeNumber NodeNumber;
 typedef struct NodeLiteral NodeLiteral;
+typedef struct NodeArrayIndex NodeArrayIndex;
 
 struct NodeProgram {
 	char* name;
@@ -82,6 +84,7 @@ struct NodeVariables {
 };
 
 struct NodeFPDecl {
+	enum {FUNC, PROC} type;
 	//Of course this could be a void*, but explicit is 
 	//better than implicit.
 	union _inner_fpdecl {
@@ -104,6 +107,7 @@ struct NodeGrouping {
 
 struct NodeFunction {
 	char* name;
+	bool is_forward;
 	NodeParams* params;
 	NodeTypeDecl* typedecl;
 	NodeBlock* block;
@@ -111,6 +115,7 @@ struct NodeFunction {
 
 struct NodeProcedure {
 	char* name;
+	bool is_forward;
 	NodeParams* params;
 	NodeTypeDecl* typedecl;
 	NodeBlock* block;
@@ -119,13 +124,13 @@ struct NodeProcedure {
 struct NodeParams {
 	NodeVariables* variables;
 	NodeVariableType* type; //or assume int?
-	NodeParams* nextparam;
+	NodeParams* next_param;
 };
 
 struct NodeVariableType {
 	bool is_int;
-	int array_start;
-	int array_end;
+	NodeExpression* array_start;
+	NodeExpression* array_end;
 };
 
 struct NodeIf {
@@ -166,7 +171,7 @@ struct NodeStatement {
 	union _inner_statement {
 		NodeAssign* assign;
 		NodeArguments* func_call_args;
-	} type;
+	} inner;
 };
 
 struct NodeAssign {
@@ -197,13 +202,25 @@ struct NodeTermPrime {
 };
 
 struct NodeFactor {
-	enum {NEG, CALL, NUM, SUBEXPR} type;
+	enum {NOT, NEG, CALL, IDENT, ARRIDX, NUM, SUBEXPR} type;
 	union _inner_factor {
-		NodeFactor* negated_factor;
-		NodeArguments* arguments;
+		NodeFactor* inner_factor;
+		NodeFuncCall* call;
+		NodeArrayIndex* array_index;
 		NodeNumber* num;
 		NodeExpression* subexpr;
+		char* id;
 	} fac;
+};
+
+struct NodeFuncCall {
+	char* fun_name;
+	NodeArguments* args;
+};
+
+struct NodeArrayIndex {
+	char* name;
+	NodeExpression* index;
 };
 
 struct NodeArguments {
@@ -212,7 +229,7 @@ struct NodeArguments {
 		NodeExpression* expr;
 		NodeLiteral* literal;
 	} arg;
-	NodeArguments* nextarg;
+	NodeArguments* next_arg;
 };
 
 struct NodeNumber {

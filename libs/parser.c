@@ -35,6 +35,13 @@ void match_sp(const char* func, char* file, int line, lexeme_type_t type) {
 		syntax_error_sp(func, file, line, 1, type);
 	}
 }
+void store_identifier(char** dst) {
+	*dst = malloc_assert(sizeof(char)*(strlen(lex->data.name)+1));
+	strcpy(*dst, lex->data.name);
+}
+void store_number(int* dst) {
+	*dst = lex->data.value; 
+}
 //Returns true if the input was correctly processed
 bool parse(lexeme_t* first_symbol) {
 	syntax_errors = 0;
@@ -52,28 +59,33 @@ bool parse_unit(lexeme_t* fs, void(*Nonterminal)(void)) {
 	Nonterminal();
 	return lex->type == EOI && syntax_errors == 0;
 }
-void Program() {
+NodeProgram* Program() {
+	NodeProgram* prog = new_node(NodeProgram);
 	switch (lex->type) {
 		case KW_PROGRAM:
 			match(KW_PROGRAM);
+			store_identifier(&prog->name);
 			match(IDENTIFIER);
 			match(STM_END);
-			ConstantDeclarations();
-			TypeDeclarations();
-			FuncProcDeclarations();
-			TypeDeclarations();
+			prog->constdecl = ConstantDeclarations();
+			prog->typedecl = TypeDeclarations();
+			prog->fpdecl = FuncProcDeclarations();
+			prog->typedecl2 = TypeDeclarations();
 			match(BLOCK_START);
-			Grouping();
+			prog->grouping = Grouping();
 			match(BLOCK_END);
 			match(PROGRAM_END);
 			break;
 		default:
 			syntax_error(1, KW_PROGRAM);
 	}
+	return prog;
 }
-void ConstDeclPrime() {
+NodeConstDecl* ConstDeclPrime() {
+	NodeConstDecl* node = NULL;
 	switch (lex->type) {
 		case IDENTIFIER:
+			node = new_node(NodeConstDecl);
 			match(IDENTIFIER);
 			match(OP_EQUALS);
 			Expression();
@@ -81,43 +93,51 @@ void ConstDeclPrime() {
 			ConstDeclPrime();
 			break;
 		default:
-			return; //ConstDeclPrime -> epsilon
+			break; //ConstDeclPrime -> epsilon
 	}
+	return node;
 }
-void ConstDecl() {
+NodeConstDecl* ConstDecl() {
+	NodeConstDecl* constdecl = NULL;
 	switch (lex->type) {
 		case IDENTIFIER:
+			constdecl = new_node(NodeConstDecl);
+			store_identifier(&constdecl->name);
 			match(IDENTIFIER);
 			match(OP_EQUALS);
+			//constdecl->expression = 
 			Expression();
 			match(STM_END);
-			ConstDeclPrime();
+			constdecl->next_constdecl = ConstDeclPrime();
 			break;
 		default:
 			syntax_error(1, IDENTIFIER);
 	}
+	return constdecl;
 }
-void ConstantDeclarations() {
+NodeConstDecl* ConstantDeclarations() {
 	switch (lex->type) {
 		case KW_CONST:
 			match(KW_CONST);
-			ConstDecl();
-			break;
+			return ConstDecl();
 		default:
-			return; //ConstantDeclarations->epsilon
+			return NULL; //ConstantDeclarations->epsilon
 	}
 }
-void Type() {
+NodeVariableType* Type() {
+	NodeVariableType* node = new_node(NodeVariableType);
 	switch (lex->type) {
 		case TYPE_INTEGER:
+			node->is_int = true;
 			match(TYPE_INTEGER);
 			break;
 		case KW_ARRAY:
+			node->is_int = false;
 			match(KW_ARRAY);
 			match(BRACKET_START);
-			Expression();
+			node->array_start = Expression();
 			match(ARRAY_RANGE);
-			Expression();
+			node->array_end = Expression();
 			match(BRACKET_END);
 			match(KW_OF);
 			match(TYPE_INTEGER);
@@ -125,102 +145,127 @@ void Type() {
 		default:
 			syntax_error(2, TYPE_INTEGER, KW_ARRAY);
 	}
+	return node;
 }
-void VariablesPrime() {
+NodeVariables* VariablesPrime() {
+	NodeVariables* node = NULL;
 	switch (lex->type) {
 		case COMMA:
+			node = new_node(NodeVariables);
 			match(COMMA);
+			store_identifier(&node->name);
 			match(IDENTIFIER);
-			VariablesPrime();
+			node->next_variables = VariablesPrime();
 			break;
 		default:
-			return; //VariablesPrime -> epsilon
+			break; //VariablesPrime -> epsilon
 	}
+	return node;
 }
-void Variables() {
+NodeVariables* Variables() {
+	NodeVariables* node = new_node(NodeVariables);
 	switch (lex->type) {
 		case IDENTIFIER:
+			store_identifier(&node->name);
 			match(IDENTIFIER);
-			VariablesPrime();
+			node->next_variables = VariablesPrime();
 			break;
 		default:
 			syntax_error(1, IDENTIFIER);
 	}
+	return node;
 }
-void TypeDeclPrime() {
+NodeTypeDecl* TypeDeclPrime() {
+	NodeTypeDecl* node = NULL;
 	switch (lex->type) {
 		case IDENTIFIER:
-			Variables();
+			node = new_node(NodeTypeDecl);
+			node->variables = Variables();
 			match(ASSIGN_TYPE);
-			Type();
+			node->type = Type();
 			match(STM_END);
-			TypeDeclPrime();
+			node->next_typedecl = TypeDeclPrime();
 			break;
 		default:
-			return; //TypeDeclPrime -> epsilon
+			break; //TypeDeclPrime -> epsilon
 	}
+	return node;
 }
-void TypeDecl() {
+NodeTypeDecl* TypeDecl() {
+	NodeTypeDecl* node = new_node(NodeTypeDecl);
 	switch (lex->type) {
 		case IDENTIFIER:
-			Variables();
+			node->variables = Variables();
 			match(ASSIGN_TYPE);
-			Type();
+			node->type = Type();
 			match(STM_END);
-			TypeDeclPrime();
+			node->next_typedecl = TypeDeclPrime();
 			break;
 		default:
 			syntax_error(1, IDENTIFIER);
 	}
+	return node;
 }
-void TypeDeclarations() {
+NodeTypeDecl* TypeDeclarations() {
+	NodeTypeDecl* node = NULL;
 	switch (lex->type) {
 		case KW_VAR:
 			match(KW_VAR);
-			TypeDecl();
-			TypeDeclarations();
+			node = TypeDecl();
+			node->next_typedecl = TypeDeclarations();
 			break;
 		default:
-			return; //TypeDeclarations -> epsilon
+			break; //TypeDeclarations -> epsilon
 	}
+	return node;
 }
-void RestParams() {
+NodeParams* RestParams() {
+	NodeParams* node = NULL;
 	switch (lex->type) {
 		case STM_END:
+			node = new_node(NodeParams);
 			match(STM_END);
-			Variables();
+			node->variables = Variables();
 			match(ASSIGN_TYPE);
-			Type();
-			RestParams();
+			node->type = Type();
+			node->next_param = RestParams();
 			break;
 		default:
-			return; //RestParams -> epsilon
+			break; //RestParams -> epsilon
 	}
+	return node;
 }
-void ParamsList() {
+NodeParams* ParamsList() {
+	NodeParams* node = NULL;
 	switch (lex->type) {
 		case PARENS_START:
+			node = new_node(NodeParams);
 			match(PARENS_START);
-			Variables();
+			node->variables = Variables();
 			match(ASSIGN_TYPE);
-			Type();
-			RestParams();
+			node->type = Type();
+			node->next_param = RestParams();
 			match(PARENS_END);
 			break;
 		default:
-			return; //ParamsList -> epsilon
+			break; //ParamsList -> epsilon
 	}
+	return node;
 }
-void ForwardOrCode() {
+void ForwardOrCode(bool* is_fwd, NodeTypeDecl** typedecl,
+	NodeBlock** block) {
 	switch (lex->type) {
+		//TODO: we should only add to the symbol table here
 		case KW_FORWARD:
+			*is_fwd = true;
 			match(KW_FORWARD);
 			match(STM_END);
 			break;
 		case KW_VAR:
 		case BLOCK_START:
-			TypeDeclarations();
-			Block();
+			*is_fwd = false;
+			*typedecl = TypeDeclarations();
+			*block = Block();
 			match(STM_END);
 			break;
 		default:
@@ -228,112 +273,139 @@ void ForwardOrCode() {
 			return;
 	}
 }
-void ProcDecl() {
+NodeProcedure* ProcDecl() {
+	NodeProcedure* node = new_node(NodeProcedure);
 	switch (lex->type) {
 		case IDENTIFIER:
+			store_identifier(&node->name);
 			match(IDENTIFIER);
-			ParamsList();
+			node->params = ParamsList();
 			match(STM_END);
-			ForwardOrCode();
+			ForwardOrCode(&node->is_forward, &node->typedecl, &node->block);
 			break;
 		default:
 			syntax_error(1, IDENTIFIER);
-			return;
+			break;
 	}
+	return node;
 }
-void FuncDecl() {
+NodeFunction* FuncDecl() {
+	NodeFunction* node = new_node(NodeFunction);
 	switch (lex->type) {
 		case IDENTIFIER:
+			store_identifier(&node->name);
 			match(IDENTIFIER);
-			ParamsList();
+			node->params = ParamsList();
 			match(ASSIGN_TYPE);
-			Type();
+			Type(); //It should always be int.
 			match(STM_END);
-			ForwardOrCode();
+			ForwardOrCode(&node->is_forward, &node->typedecl, &node->block);
 			break;
 		default:
 			syntax_error(1, IDENTIFIER);
-			return;
+			break;
 	}
+	return node;
 }
-void FuncProcDeclarations() {
+NodeFPDecl* FuncProcDeclarations() {
+	NodeFPDecl* node = NULL;
 	switch (lex->type) {
 		case KW_PROCEDURE:
+			node = new_node(NodeFPDecl);
 			match(KW_PROCEDURE);
-			ProcDecl();
-			FuncProcDeclarations();
+			node->type = PROC;
+			node->decl.proc = ProcDecl();
+			node->next_fpdecl = FuncProcDeclarations();
 			break;
 		case KW_FUNCTION:
 			match(KW_FUNCTION);
-			FuncDecl();
-			FuncProcDeclarations();
+			node->type = FUNC;
+			node->decl.func = FuncDecl();
+			node->next_fpdecl = FuncProcDeclarations();
 			break;
 		default:
-			return; //FuncProcDeclarations -> epsilon
+			break; //FuncProcDeclarations -> epsilon
 	}
+	return node;
 }
-void GroupingPrime() {
+NodeGrouping* GroupingPrime() {
 	switch (lex->type) {
 		case STM_END:
 			match(STM_END);
-			Grouping();
+			return Grouping();
 		default:
-			return; //GroupingPrime -> epsilon
+			return NULL; //GroupingPrime -> epsilon
 	}
 }
-void Grouping() {
+NodeGrouping* Grouping() {
+	NodeGrouping* node = new_node(NodeGrouping);
 	switch (lex->type) {
 		case KW_IF: //G -> if cond then Block G
+			node->type=IF;
+			node->inner._if = new_node(NodeIf);
 			match(KW_IF);
-			Expression();
+			node->inner._if->expr = Expression();
 			match(KW_THEN);
-			Block();
-			Else();
-			GroupingPrime();
+			node->inner._if->block = Block();
+			node->inner._if->_else = Else();
+			node->next_grouping = GroupingPrime();
 			break;
 		case KW_FOR:
+			node->type = FOR;
+			node->inner._for = new_node(NodeFor);
 			match(KW_FOR);
+			store_identifier(&node->inner._for->id);
 			match(IDENTIFIER);
 			match(ASSIGN);
-			Expression();
-			ForDirection();
-			Expression();
+			node->inner._for->start_expr = Expression();
+			node->inner._for->direction = ForDirection();
+			node->inner._for->stop_expr = Expression();
 			match(KW_DO);
-			Block();
-			GroupingPrime();
+			node->inner._for->block = Block();
+			node->next_grouping = GroupingPrime();
 			break;
 		case KW_WHILE:
+			node->type = WHILE;
+			node->inner._while = new_node(NodeWhile);
 			match(KW_WHILE);
-			Expression();
+			node->inner._while->condition = Expression();
 			match(KW_DO);
-			Block();
-			GroupingPrime();
+			node->inner._while->block = Block();
+			node->next_grouping = GroupingPrime();
 			break;
 		case KW_EXIT:
 		case IDENTIFIER: //first of Statement
-			Statement();
-			GroupingPrime();
+			node->type = STATEMENT;
+			node->inner.statement = Statement();
+			node->next_grouping = GroupingPrime();
 			break;
 		default:
-			return;
-		//	since it can be epsilon I don't think it throws synxerror on def
+			free(node);
+			node = NULL;
+			break;
 	}
+	return node;
 }
-void ForDirection() {
+fordirection_t ForDirection() {
 	switch (lex->type) {
 		case KW_TO:
 			match(KW_TO);
+			return UP;
 			break;
 		case KW_DOWNTO:
 			match(KW_DOWNTO);
+			return DOWN;
 			break;
 		default:
 			syntax_error(2, KW_TO, KW_DOWNTO);
+			return DOWN;
 	}
 }
-void ExprOrLiteral() {
+void ExprOrLiteral(NodeArguments* node) {
 	switch (lex->type) {
 		case LITERAL:
+			node->arg.literal = new_node(NodeLiteral);
+			store_identifier(&node->arg.literal->value);
 			match(LITERAL);
 			break;
 		//First of expression
@@ -342,7 +414,8 @@ void ExprOrLiteral() {
 		case NUMBER:
 		case IDENTIFIER:
 		case PARENS_START:
-			Expression();
+			node->is_expr = true;
+			node->arg.expr = Expression();
 			break;
 		default:
 			syntax_error(6, LITERAL, OP_NOT, OP_MINUS, NUMBER, IDENTIFIER, 
@@ -350,18 +423,22 @@ void ExprOrLiteral() {
 			return;
 	}
 }
-void RestArgs() {
+NodeArguments* RestArgs() {
+	NodeArguments* node = NULL;
 	switch (lex->type) {
 		case COMMA:
+			node = new_node(NodeArguments);
 			match(COMMA);
-			ExprOrLiteral();
-			RestArgs();
+			ExprOrLiteral(node);
+			node->next_arg = RestArgs();
 			break;
 		default: //RestArgs->epsilon
-			return;
+			break;
 	}
+	return node;
 }
-void Arguments() {
+NodeArguments* Arguments() {
+	NodeArguments* node = NULL;
 	switch (lex->type) {
 		//First of ExprOrLiteral
 		case LITERAL:
@@ -370,234 +447,300 @@ void Arguments() {
 		case NUMBER:
 		case IDENTIFIER:
 		case PARENS_START:
-			ExprOrLiteral();
-			RestArgs();
+			node = new_node(NodeArguments);
+			ExprOrLiteral(node);
+			node->next_arg = RestArgs();
 			break;
 		default: //Arguments->epsilon
-			return;
+			break;
 	}
+	return node;
 }
-void FuncCall() {
+NodeArguments* FuncCall() {
+	NodeArguments* node = NULL;
 	switch (lex->type) {
 		case PARENS_START:
 			match(PARENS_START);
-			Arguments();
+			node = Arguments();
 			match(PARENS_END);
 			break;
 		default: //FuncCall -> $
-			return;
+			break;
 	}
+	return node;
 }
-void IdentifierStatement() {
+void IdentifierStatement(NodeStatement* node) {
 	switch (lex->type) {
 		case ASSIGN: //Variable assignment
+			node->is_assign = true;
 			match(ASSIGN);
-			Expression();
+			node->inner.assign = new_node(NodeAssign);
+			node->inner.assign->expr = Expression();
 			break;
 		case BRACKET_START: //Array assignment
+			node->is_assign = true;
+			node->inner.assign = new_node(NodeAssign);
 			match(BRACKET_START);
-			Expression();
+			node->inner.assign->arr_index = Expression();
 			match(BRACKET_END);
 			match(ASSIGN);
-			Expression();
+			node->inner.assign->expr = Expression();
 			break;
 		case PARENS_START: //Function call
 			match(PARENS_START);
-			Arguments();
+			node->inner.func_call_args = Arguments();
 			match(PARENS_END);
 			break;
 		default:
 			syntax_error(3, ASSIGN, BRACKET_START, PARENS_START);
 	}
 }
-void Statement() {
+NodeStatement* Statement() {
+	NodeStatement* node = new_node(NodeStatement);
 	switch (lex->type) {
 		case KW_EXIT:
+			node->is_exit = true;
 			match(KW_EXIT);
 			break;
 		case IDENTIFIER:
+			store_identifier(&node->identifier);
 			match(IDENTIFIER);
-			IdentifierStatement();
+			IdentifierStatement(node);
 			break;
 		default:
-			syntax_error(1, IDENTIFIER);
+			syntax_error(2, IDENTIFIER, KW_EXIT);
 	}
+	return node;
 }
-void Else() {
+NodeElse* Else() {
+	NodeElse* node = NULL;
 	switch (lex->type) {
 		case KW_ELSE:
+			node = new_node(NodeElse);
 			match(KW_ELSE);
-			Block();
+			node->block = Block();
 			break;
 		default:
-			return;
-		//Same, no default.
+			break; //Else -> epsilon
 	}
+	return node;
 }
-void Block() {
+NodeBlock* Block() {
+	NodeBlock* node = new_node(NodeBlock);
 	switch (lex->type) {
 		case BLOCK_START:
+			node->is_grouping = true;
 			match(BLOCK_START);
-			Grouping();
+			node->inner.grouping = Grouping();
 			match(BLOCK_END);
 			break;
 		//First of Statement
 		case KW_EXIT:
 		case IDENTIFIER:
-			Statement();
+			node->inner.statement = Statement();
 			break;
 		default:
 			syntax_error(3, BLOCK_START, IDENTIFIER, KW_EXIT);
 	}
+	return node;
 }
-void Expression() {
+NodeExpression* Expression() {
+	NodeExpression* node = new_node(NodeExpression);
 	switch (lex->type) {
 		case OP_NOT:
 		case OP_MINUS:
 		case NUMBER:
 		case IDENTIFIER:
 		case PARENS_START:
-			Term();
-			ExpressionPrime();
+			node->term = Term();
+			node->exp_prime = ExpressionPrime();
 			break;
 		default:
 			syntax_error(5, NUMBER, IDENTIFIER, PARENS_START, OP_NOT, OP_MINUS);
 	}
+	return node;
 }
-void ExpressionPrime() {
+NodeExpressionPrime* ExpressionPrime() {
+	NodeExpressionPrime* node = new_node(NodeExpressionPrime);
 	switch (lex->type) {
 		case OP_MOD:
+			node->op = MOD; 
 			match(OP_MOD);
-			Term();
-			ExpressionPrime();
+			node->term = Term();
+			node->exp_prime = ExpressionPrime();
 			break;
 		case OP_GT:
+			node->op = GT;
 			match(OP_GT);
-			Term();
-			ExpressionPrime();
+			node->term = Term();
+			node->exp_prime = ExpressionPrime();
 			break;
 		case OP_GTE:
+			node->op = GTE;
 			match(OP_GTE);
-			Term();
-			ExpressionPrime();
+			node->term = Term();
+			node->exp_prime = ExpressionPrime();
 			break;
 		case OP_LT:
+			node->op = LT;
 			match(OP_LT);
-			Term();
-			ExpressionPrime();
+			node->term = Term();
+			node->exp_prime = ExpressionPrime();
 			break;
 		case OP_LTE:
+			node->op = LTE;
 			match(OP_LTE);
-			Term();
-			ExpressionPrime();
+			node->term = Term();
+			node->exp_prime = ExpressionPrime();
 			break;
 		case OP_NEQUALS:
+			node->op = NEQ;
 			match(OP_NEQUALS);
-			Term();
-			ExpressionPrime();
+			node->term = Term();
+			node->exp_prime = ExpressionPrime();
 			break;
 		case OP_EQUALS:
+			node->op = EQ;
 			match(OP_EQUALS);
-			Term();
-			ExpressionPrime();
+			node->term = Term();
+			node->exp_prime = ExpressionPrime();
 			break;
 		case OP_PLUS:
+			node->op = PLUS;
 			match(OP_PLUS);
-			Term();
-			ExpressionPrime();
+			node->term = Term();
+			node->exp_prime = ExpressionPrime();
 			break;
 		case OP_MINUS:
+			node->op = MINUS;
 			match(OP_MINUS);
-			Term();
-			ExpressionPrime();
+			node->term = Term();
+			node->exp_prime = ExpressionPrime();
 			break;
 		case OP_AND:
+			node->op = AND;
 			match(OP_AND);
-			Term();
-			ExpressionPrime();
+			node->term = Term();
+			node->exp_prime = ExpressionPrime();
 			break;
 		case OP_OR:
+			node->op = OR;
 			match(OP_OR);
-			Term();
-			ExpressionPrime();
+			node->term = Term();
+			node->exp_prime = ExpressionPrime();
 			break;
 		default:
-			return;
-		//No default error: ExpressionPrime -> epsilon
+			free(node);
+			node = NULL;
+			break;//ExpressionPrime -> epsilon
 	}
+	return node;
 }
-void Term() {
+NodeTerm* Term() {
+	NodeTerm* node = new_node(NodeTerm);
 	switch (lex->type) {
 		case OP_NOT:
 		case OP_MINUS:
 		case IDENTIFIER:
 		case NUMBER:
 		case PARENS_START:
-			Factor();
-			TermPrime();
+			node->factor = Factor();
+			node->term_prime = TermPrime();
 			break;
 		default:
 			syntax_error(3, IDENTIFIER, NUMBER, PARENS_START);
 	}
+	return node;
 }
-void TermPrime() {
+NodeTermPrime* TermPrime() {
+	NodeTermPrime* node = NULL;
 	switch (lex->type) {
 		case OP_MULTIPLY:
+			node = new_node(NodeTermPrime);
+			node->op = MULT;
 			match(OP_MULTIPLY);
-			Factor();
-			TermPrime();
+			node->factor = Factor();
+			node->term_prime = TermPrime();
 			break;
 		case OP_DIV:
+			node = new_node(NodeTermPrime);
+			node->op = DIV;
 			match(OP_DIV);
-			Factor();
-			TermPrime();
+			node->factor = Factor();
+			node->term_prime = TermPrime();
 			break;
 		case OP_INTDIV:
+			node = new_node(NodeTermPrime);
+			node->op = INTDIV;
 			match(OP_INTDIV);
-			Term();
-			TermPrime();
+			node->factor = Factor();
+			node->term_prime = TermPrime();
 			break;
 		default:
-			return;
-		//No default error: TermPrime -> epsilon
+			break; //TermPrime -> epsilon
 	}
+	return node;
 }
-void FuncCallOrArrayIndex() {
+void FuncCallOrArrayIndex(NodeFactor* node) {
 	switch (lex->type) {
 		case BRACKET_START:
+			node->type = ARRIDX;
+			node->fac.array_index = new_node(NodeArrayIndex);
 			match(BRACKET_START);
-			Expression();
+			node->fac.array_index->index = Expression();
 			match(BRACKET_END);
 			break;
 		case PARENS_START:
-			FuncCall();
+			node->type = CALL;
+			node->fac.call = new_node(NodeFuncCall);
+			node->fac.call->args = FuncCall();
+			break;
 		default:
+			node->type = IDENT;
 			return;
 	}
 }
-void Factor() {
+NodeFactor* Factor() {
+	NodeFactor* node = new_node(NodeFactor);
+	char* buf; 
 	switch (lex->type) {
 		case OP_NOT:
+			node->type = NOT;
 			match(OP_NOT);
-			Factor();
+			node->fac.inner_factor = Factor();
 			break;
 		case IDENTIFIER:
+			buf = malloc_assert(sizeof(char)*(strlen(lex->data.name)+1));
+			store_identifier(&buf);
 			match(IDENTIFIER);
-			FuncCallOrArrayIndex();
+			FuncCallOrArrayIndex(node);
+			if (node->type == CALL) {
+				node->fac.call->fun_name = buf;
+			} else if (node->type == IDENT) {
+				node->fac.id = buf;
+			} else if (node->type == ARRIDX){
+				node->fac.array_index->name = buf;
+			}
 			break;
 		case OP_MINUS:
+			node->type = NEG;
 			match(OP_MINUS);
-			Factor();
+			node->fac.inner_factor = Factor();
 			break;
 		case NUMBER:
+			node->type = NUM;
+			node->fac.num = new_node(NodeNumber);
+			store_number(&node->fac.num->value);
 			match(NUMBER);
 			break;
 		case PARENS_START:
+			node->type = SUBEXPR;
 			match(PARENS_START);
-			Expression();
+			node->fac.subexpr = Expression();
 			match(PARENS_END);
 			break;
 		default:
-			syntax_error(3, IDENTIFIER, NUMBER, PARENS_START);
+			syntax_error(5, OP_NOT, IDENTIFIER, OP_MINUS, NUMBER, PARENS_START);
 	}
+	return node;
 }
