@@ -318,6 +318,7 @@ NodeFPDecl* FuncProcDeclarations() {
 			node->next_fpdecl = FuncProcDeclarations();
 			break;
 		case KW_FUNCTION:
+			node = new_node(NodeFPDecl);
 			match(KW_FUNCTION);
 			node->type = FUNC;
 			node->decl.func = FuncDecl();
