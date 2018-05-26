@@ -2,20 +2,23 @@
 #include "../libs/parser.h"
 #include <check.h>
 
-void parser_test(char* input, void(*Nonterminal)(void)) {
+#define parser_test(i, f) parser_test_((i),(Nonterminal) (f))
+#define parser_neg_test(i, f) parser_neg_test_((i), (Nonterminal)(f))
+
+void parser_test_(char* input, Nonterminal nt) {
 	bool unfinished_comment = false;
 	lexeme_t* lex = process_string(input, &unfinished_comment);
 	char errormsg[1000];
 	sprintf(errormsg, "Failed: %s", input);
-	ck_assert_msg(parse_unit(lex, Nonterminal), errormsg);
+	ck_assert_msg(parse_unit(lex, nt), errormsg);
 }
 
-void parser_neg_test(char* input, void(*Nonterminal)(void)) {
+void parser_neg_test_(char* input, Nonterminal nt) {
 	bool unfinished_comment = false;
 	lexeme_t* lex = process_string(input, &unfinished_comment);
 	char errormsg[1000];
 	sprintf(errormsg, "Should not pass: %s", input);
-	ck_assert_msg(! parse_unit(lex, Nonterminal), errormsg);
+	ck_assert_msg(! parse_unit(lex, nt), errormsg);
 }
 
 START_TEST (parser_assignment_test) {

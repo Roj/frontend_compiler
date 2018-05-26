@@ -3,10 +3,15 @@
 #include "lexical.h"
 #include "tree.h"
 
+typedef void* (*Nonterminal)(void);
+
 bool parse(lexeme_t* first_symbol);
 
-bool parse_unit(lexeme_t* fs, void (*Nonterminal)(void));
+#define parse_unit(i, f) parse_unit_((i),(Nonterminal) (f))
+bool parse_unit_(lexeme_t* fs, void* (*Nonterminal)(void));
+
 //This is not super-useful, but is necessary for unit testing.
+
 NodeProgram* Program();
 NodeConstDecl* ConstantDeclarations();
 NodeTypeDecl* TypeDeclarations();

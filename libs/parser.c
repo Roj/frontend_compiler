@@ -53,7 +53,7 @@ bool parse(lexeme_t* first_symbol) {
 	}
 	return lex->type == EOI && syntax_errors == 0;
 }
-bool parse_unit(lexeme_t* fs, void(*Nonterminal)(void)) {
+bool parse_unit_(lexeme_t* fs, void*(*Nonterminal)(void)) {
 	syntax_errors = 0;
 	lex = fs;
 	Nonterminal();
@@ -105,8 +105,7 @@ NodeConstDecl* ConstDecl() {
 			store_identifier(&constdecl->name);
 			match(IDENTIFIER);
 			match(OP_EQUALS);
-			//constdecl->expression = 
-			Expression();
+			constdecl->expression = Expression();
 			match(STM_END);
 			constdecl->next_constdecl = ConstDeclPrime();
 			break;
