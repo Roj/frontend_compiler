@@ -12,7 +12,7 @@ int main(int argc, char* argv[]) {
 		//any errors this message is shown first
 		fprintf(stderr, "Parsing file %s\n", argv[2]);
 		lexeme_t* start = process_file(argv[2]);
-		if (parse(start)) {
+		if (verify_syntax(start)) {
 			printf("Parsed correctly!\n");
 		} else {
 			printf("Does not fit the syntax!\n");
@@ -34,7 +34,7 @@ int main(int argc, char* argv[]) {
 			current = current->next;
 		}
 		printf("\n");
-		if (parse(start)) {
+		if (verify_syntax(start)) {
 			printf("Parsed correctly!\n");
 		} else {
 			printf("Does not fit the syntax!\n");

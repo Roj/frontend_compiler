@@ -43,10 +43,21 @@ void store_number(int* dst) {
 	*dst = lex->data.value; 
 }
 //Returns true if the input was correctly processed
-bool parse(lexeme_t* first_symbol) {
+bool verify_syntax(lexeme_t* first_symbol) {
 	syntax_errors = 0;
 	lex = first_symbol;
 	Program();
+	if (lex->type != EOI) {
+		fprintf(stderr, "End is not EOI, is %s in line %d.\n", 
+			lex2str(lex), lex->line_num);
+	}
+	return lex->type == EOI && syntax_errors == 0;
+}
+//As before, but also stores the program in address location.
+bool parse(lexeme_t* first_symbol, NodeProgram** prog) {
+	syntax_errors = 0;
+	lex = first_symbol;
+	*prog = Program();
 	if (lex->type != EOI) {
 		fprintf(stderr, "End is not EOI, is %s in line %d.\n", 
 			lex2str(lex), lex->line_num);

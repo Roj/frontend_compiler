@@ -5,7 +5,8 @@
 
 typedef void* (*Nonterminal)(void);
 
-bool parse(lexeme_t* first_symbol);
+bool verify_syntax(lexeme_t* first_symbol);
+bool parse(lexeme_t* first_symbol, NodeProgram** prog);
 
 #define parse_unit(i, f) parse_unit_((i),(Nonterminal) (f))
 bool parse_unit_(lexeme_t* fs, void* (*Nonterminal)(void));

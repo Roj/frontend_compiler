@@ -6,6 +6,8 @@ session
 *.swp
 *.vim
 *.pdf
+*.p
+codegen
 parser
 main
 testsuite
