@@ -1,5 +1,6 @@
 #include "libs/lexical.h"
 #include "libs/parser.h"
+#include "libs/codegen.h"
 #include <stdlib.h>
 #include <stdio.h>
 #include <assert.h>
@@ -25,8 +26,8 @@ int main(int argc, char* argv[]) {
 	char filenameout[500];
 	strcpy(filenameout, argv[1]);
 	filenameout[strlen(filenameout)-1]='o';
-	//codegen(ast_root);
-	printf("Written file %s\nLink with: \ngcc %s -o %.*s\n" , 
+	codegen(ast_root, filenameout);
+	printf("Written file %s\nLink with: \ngcc %s -o %.*s -no-pie\n" , 
 		filenameout, filenameout, (int) strlen(filenameout)-2, filenameout);
 	return 0;
 }
