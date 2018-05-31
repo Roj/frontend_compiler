@@ -1,0 +1,3 @@
+[submodule "hashtable"]
+	path = hashtable
+	url = https://github.com/noonat/hashtable

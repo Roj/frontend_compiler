@@ -12,10 +12,10 @@ lexical: libs/lexical.o lexical.o
 parser: libs/lexical.o libs/parser.o libs/tree.o parser.o
 	$(CC) $(CFLAGS) $^ $(CLIBS) -o parser
 	
-codegen.o: libs/lexical.o libs/parser.o libs/tree.o libs/codegen.o codegen.c
+codegen.o: libs/lexical.o libs/parser.o libs/tree.o hashtable/hash.o hashtable/table.o libs/codegen.o codegen.c
 	$(CC) $(CFLAGS) $^ -c $<
 
-codegen: libs/lexical.o libs/parser.o libs/tree.o libs/codegen.o codegen.o
+codegen: libs/lexical.o libs/parser.o libs/tree.o hashtable/hash.o hashtable/table.o libs/codegen.o codegen.o
 	$(LD) $(LDFLAGS) $^ $(CLIBS) -o codegen
 
 testlexical:  libs/lexical.o test/lexicaltest.o
