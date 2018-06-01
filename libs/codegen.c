@@ -250,6 +250,46 @@ void process_block(NodeBlock* block, function_state function,
 		process_statement(block->inner.statement, function, program);
 	}
 }
+void process_if(NodeIf* if_node, function_state function, program_state program) {
+	/*
+	 * Basically the flow we create is:
+	 main_block:
+	 branch <expr>, then_block
+	 jump else_block
+	 then_block:
+	 ...
+	 jump continue_block
+	 else_block:
+	 [...] //optional, may be empty
+	 jump continue_block
+	 continue_block:
+	 */
+	LLVMBasicBlockRef then_blockref = LLVMAppendBasicBlock(
+		function.function_ref, "then_block");
+	LLVMBasicBlockRef else_blockref = LLVMAppendBasicBlock(
+		function.function_ref, "else_block");
+	LLVMBasicBlockRef continue_blockref = LLVMAppendBasicBlock(
+		function.function_ref, "continue_block");
+
+	LLVMBuildCondBr(
+		function.builder,
+		process_expression(if_node->expr, function, program),
+		then_blockref,
+		else_blockref
+	);
+
+	LLVMPositionBuilderAtEnd(function.builder, then_blockref);
+	process_block(if_node->block, function, program);
+	LLVMBuildBr(function.builder, continue_blockref);
+
+	LLVMPositionBuilderAtEnd(function.builder, else_blockref);
+	if (if_node->_else != NULL)
+		process_block(if_node->_else->block, function, program);
+
+	LLVMBuildBr(function.builder, continue_blockref);
+
+	LLVMPositionBuilderAtEnd(function.builder, continue_blockref);
+}
 void process_grouping(NodeGrouping* grouping, function_state function,
 	program_state program) {
 	if (grouping == NULL)
@@ -259,34 +299,7 @@ void process_grouping(NodeGrouping* grouping, function_state function,
 			process_statement(grouping->inner.statement, function, program);
 			break;
 		case IF:
-			;
-			NodeIf* if_node = grouping->inner._if;
-
-			LLVMBasicBlockRef then_blockref = LLVMAppendBasicBlock(
-				function.function_ref, "then_block");
-			LLVMBasicBlockRef else_blockref = LLVMAppendBasicBlock(
-				function.function_ref, "else_block");
-			LLVMBasicBlockRef continue_blockref = LLVMAppendBasicBlock(
-				function.function_ref, "continue_block");
-
-			LLVMBuildCondBr(
-				function.builder,
-				process_expression(if_node->expr, function, program),
-				then_blockref,
-				else_blockref
-			);
-
-			LLVMPositionBuilderAtEnd(function.builder, then_blockref);
-			process_block(if_node->block, function, program);
-			LLVMBuildBr(function.builder, continue_blockref);
-
-			LLVMPositionBuilderAtEnd(function.builder, else_blockref);
-			if (if_node->_else != NULL)
-				process_block(if_node->_else->block, function, program);
-
-			LLVMBuildBr(function.builder, continue_blockref);
-
-			LLVMPositionBuilderAtEnd(function.builder, continue_blockref);
+			process_if(grouping->inner._if, function, program);
 			break;
 		case FOR:
 			break;
