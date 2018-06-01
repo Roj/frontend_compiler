@@ -25,6 +25,7 @@
 #define symbol_table_init(st) table_init((st), H_STRING, NULL, NULL)
 #define symbol_exists(st, sn) table_contains((st), (hvalue_t) (sn))
 #define symbol_get(st, sn) (LLVMValueRef) table_get((st), (hvalue_t) (sn))
+#define symbol_add(st, sn, sv) table_set((st), (hvalue_t) (sn), (hvalue_t) (sv))
 
 typedef struct function_state {
 	LLVMBuilderRef builder;
@@ -116,14 +117,22 @@ LLVMValueRef process_factor(NodeFactor* factor, function_state function,
 			fprintf(stderr, "call not implemented as factor\n");
 			break;
 		case IDENT:
+			;
+			LLVMValueRef val = NULL;
 			if (symbol_exists(function.symbols, factor->fac.id))
-				return symbol_get(function.symbols, factor->fac.id);
+				val = symbol_get(function.symbols, factor->fac.id);
 			
-			if (symbol_exists(program.symbols, factor->fac.id))
-				return symbol_get(program.symbols, factor->fac.id);
+			if (val == NULL && symbol_exists(program.symbols, factor->fac.id))
+				val = symbol_get(program.symbols, factor->fac.id);
 
-			fprintf(stderr, "identifier %s not found\n", factor->fac.id);
-			break;
+			if (val == NULL) {
+				fprintf(stderr, "identifier %s not found\n", factor->fac.id);
+				return NULL;
+			}
+			if (LLVMIsConstant(val))
+				return val;
+
+			return LLVMBuildLoad(function.builder, val, "load_");
 		case ARRIDX:
 			fprintf(stderr, "arridx not implemented as factor\n");
 			break;
@@ -201,6 +210,20 @@ LLVMValueRef process_expression(NodeExpression* expr, function_state function,
 void process_statement(NodeStatement* statement, function_state function,
 	program_state program) {
 	if (statement->is_assign) {
+		LLVMValueRef variable = NULL;
+		variable = symbol_get(function.symbols, statement->identifier);
+		if (variable == NULL)
+			variable = symbol_get(program.symbols, statement->identifier);
+
+		if (variable == NULL) {
+			fprintf(stderr, "Symbol not recognised: %s\n", statement->identifier);
+			return;
+		}
+		LLVMBuildStore(
+			function.builder,
+			process_expression(statement->inner.assign->expr, function, program),
+			variable
+		);
 		return;
 	} 
 	if (statement->is_exit) {
@@ -281,10 +304,25 @@ void process_constdecl(NodeConstDecl* decl, function_state function,
 	if (decl == NULL)
 		return;
 
-	table_set(symbols, (hvalue_t) decl->name,
-		(hvalue_t) process_expression(decl->expression, function, program));
+	symbol_add(symbols, decl->name,
+		process_expression(decl->expression, function, program));
 
 	process_constdecl(decl->next_constdecl, function, program, symbols);
+}
+void process_typedecl(NodeTypeDecl* typedecl, function_state function,
+	program_state program, table_t* symbols) {
+	if (typedecl == NULL)
+		return;
+	//TODO: add array support?
+	//TODO: should I copy the str?
+	NodeVariables* variable = typedecl->variables;
+	for (; variable != NULL; variable = variable->next_variables) {
+		symbol_add(
+			symbols,
+			variable->name,
+			LLVMBuildAlloca(function.builder, LLVMInt32Type(), variable->name)
+		);
+	}
 }
 void process_ast(NodeProgram* root, LLVMModuleRef mod) {
 	//main function declaration
@@ -311,6 +349,7 @@ void process_ast(NodeProgram* root, LLVMModuleRef mod) {
 
 	//load global symbols
 	process_constdecl(root->constdecl, main_state, global_state, global_symbols);
+	process_typedecl(root->typedecl, main_state, global_state, global_symbols);
 	
 	process_grouping(root->grouping, main_state, global_state);
 
