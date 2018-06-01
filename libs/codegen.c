@@ -34,7 +34,6 @@ typedef struct function_state {
 } function_state;
 typedef struct program_state {
 	LLVMModuleRef mod;
-	LLVMValueRef printf_ref;
 	table_t* symbols;
 } program_state;
 
@@ -44,17 +43,30 @@ LLVMValueRef process_expression(NodeExpression* expr, function_state function,
 void process_grouping(NodeGrouping* grouping, function_state function,
 	program_state program);
 
-void gen_print_number(LLVMBuilderRef builder, LLVMValueRef var, 
-	LLVMValueRef printf_ref) {
-	LLVMValueRef format = LLVMBuildGlobalStringPtr(
-		builder,
-		"%d.\n",
-		"format"
-	);
-	//We use the same identifiers for each function call, but LLVM automatically
-	//appends a number to differentiate between calls
-	LLVMValueRef PrintfArgs[] = { format, var};
-	LLVMBuildCall(builder, printf_ref, PrintfArgs, 2, "printf");
+void gen_print_number(LLVMBuilderRef builder, LLVMValueRef var,
+	table_t* global_symbols) {
+	if (! symbol_exists(global_symbols, "_printf_format"))
+		symbol_add(global_symbols, "_printf_format",
+			LLVMBuildGlobalStringPtr(builder, "%d.\n", "_printf_format"));
+
+	LLVMValueRef format = symbol_get(global_symbols, "_printf_format");
+	LLVMValueRef PrintfArgs[] = {format, var};
+
+	LLVMBuildCall(builder, symbol_get(global_symbols, "printf"),
+		PrintfArgs, 2, "printf");
+}
+void read_number(LLVMBuilderRef builder, LLVMValueRef ptr,
+	table_t* global_symbols) {
+	if (! symbol_exists(global_symbols, "_scanf_format"))
+		symbol_add(global_symbols, "_scanf_format",
+			LLVMBuildGlobalStringPtr(builder, "%d", "_scanf_format"));
+
+	LLVMValueRef format = symbol_get(global_symbols, "_scanf_format");
+	LLVMValueRef ScanfArgs[] = {format, ptr};
+
+	LLVMBuildCall(builder, symbol_get(global_symbols, "scanf"),
+		ScanfArgs, 2, "scanf");
+
 }
 LLVMValueRef get_closest_symbol(char* name, function_state function,
 	program_state program) {
@@ -232,13 +244,33 @@ void process_statement(NodeStatement* statement, function_state function,
 	if (statement->is_exit) {
 		return;
 	}
-	//Function call
+	//Function (or procedure) call
 	NodeArguments* args = statement->inner.func_call_args;
 	if (strcmp(statement->identifier, "writeln") == 0)  {
 		gen_print_number(
 			function.builder, 
 			process_expression(args->arg.expr, function, program),
-			program.printf_ref
+			program.symbols
+		);
+	} else if (strcmp(statement->identifier, "readln") == 0) {
+		if (get_num_arguments(statement->inner.func_call_args) != 1) {
+			fprintf(stderr, "Readln call with wrong num of args\n");
+			return;
+		}
+		char* id = get_name_if_arg_is_identifier(statement->inner.func_call_args);
+		if (id == NULL) {
+			fprintf(stderr, "Readln was not passed a pointer\n");
+			return;
+		}
+		LLVMValueRef ptr = get_closest_symbol(id, function, program);
+		if (ptr == NULL) {
+			fprintf(stderr, "Symbol not found\n");
+			return;
+		}
+		read_number(
+			function.builder,
+			ptr,
+			program.symbols
 		);
 	}
 }
@@ -461,6 +493,11 @@ void process_ast(NodeProgram* root, LLVMModuleRef mod) {
 	LLVMTypeRef ret_type_print = LLVMFunctionType(LLVMInt32Type(), param_printf, 0, true);
 	LLVMValueRef printf_ = LLVMAddFunction(mod, "printf", ret_type_print);
 
+	//Add extern reference to function scanf
+	LLVMTypeRef param_scanf[] = { LLVMPointerType(LLVMInt8Type(), 0) };
+	LLVMTypeRef ret_type_scan = LLVMFunctionType(LLVMInt32Type(), param_scanf, 0, true);
+	LLVMValueRef scanf_ = LLVMAddFunction(mod, "scanf", ret_type_scan);
+
 	//main() code
 	LLVMBasicBlockRef main_block = LLVMAppendBasicBlock(mainf, "_start");
 	LLVMBuilderRef main_builder = LLVMCreateBuilder();
@@ -468,13 +505,16 @@ void process_ast(NodeProgram* root, LLVMModuleRef mod) {
 
 	table_t* global_symbols = malloc_assert(sizeof(table_t));
 	symbol_table_init(global_symbols);
-	program_state global_state = {mod, printf_, global_symbols};
+	program_state global_state = {mod, global_symbols};
+
 
 	table_t* function_symbols = malloc_assert(sizeof(table_t));
 	symbol_table_init(function_symbols);
 	function_state main_state = {main_builder, mainf, function_symbols};
 
 	//load global symbols
+	symbol_add(global_symbols, "printf", printf_);
+	symbol_add(global_symbols, "scanf", scanf_);
 	process_constdecl(root->constdecl, main_state, global_state, global_symbols);
 	process_typedecl(root->typedecl, main_state, global_state, global_symbols);
 	

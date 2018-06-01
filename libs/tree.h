@@ -240,4 +240,6 @@ struct NodeLiteral {
 };
 
 void* malloc_assert(size_t size);
+int get_num_arguments(NodeArguments* args);
+char* get_name_if_arg_is_identifier(NodeArguments* arg);
 #endif
