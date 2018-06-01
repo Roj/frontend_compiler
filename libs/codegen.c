@@ -95,8 +95,7 @@ LLVMValueRef handle_expr_op(LLVMBuilderRef builder,
 	LLVMValueRef v1, LLVMValueRef v2, expr_op_t op) {
 	switch (op) {
 		case MOD:
-			//TODO
-			break;
+			return LLVMBuildSRem(builder, v1, v2, "modresult");
 		case GTE:
 			return LLVMBuildICmp(builder, LLVMIntSGE, v1, v2, "gteresult");
 		case LTE:
