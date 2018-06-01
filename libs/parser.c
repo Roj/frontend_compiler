@@ -97,11 +97,12 @@ NodeConstDecl* ConstDeclPrime() {
 	switch (lex->type) {
 		case IDENTIFIER:
 			node = new_node(NodeConstDecl);
+			store_identifier(&node->name);
 			match(IDENTIFIER);
 			match(OP_EQUALS);
-			Expression();
+			node->expression = Expression();
 			match(STM_END);
-			ConstDeclPrime();
+			node->next_constdecl = ConstDeclPrime();
 			break;
 		default:
 			break; //ConstDeclPrime -> epsilon
