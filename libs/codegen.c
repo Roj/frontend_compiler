@@ -56,6 +56,16 @@ void gen_print_number(LLVMBuilderRef builder, LLVMValueRef var,
 	LLVMValueRef PrintfArgs[] = { format, var};
 	LLVMBuildCall(builder, printf_ref, PrintfArgs, 2, "printf");
 }
+LLVMValueRef get_closest_symbol(char* name, function_state function,
+	program_state program) {
+	if (symbol_exists(function.symbols, name))
+		return symbol_get(function.symbols, name);
+
+	if (symbol_exists(program.symbols, name))
+		return symbol_get(program.symbols, name);
+
+	return NULL;
+}
 LLVMValueRef handle_factor_op(LLVMBuilderRef builder,
 	LLVMValueRef v1, LLVMValueRef v2, factor_op_t op) {
 	switch (op) {
@@ -118,12 +128,7 @@ LLVMValueRef process_factor(NodeFactor* factor, function_state function,
 			break;
 		case IDENT:
 			;
-			LLVMValueRef val = NULL;
-			if (symbol_exists(function.symbols, factor->fac.id))
-				val = symbol_get(function.symbols, factor->fac.id);
-			
-			if (val == NULL && symbol_exists(program.symbols, factor->fac.id))
-				val = symbol_get(program.symbols, factor->fac.id);
+			LLVMValueRef val = get_closest_symbol(factor->fac.id, function, program);
 
 			if (val == NULL) {
 				fprintf(stderr, "identifier %s not found\n", factor->fac.id);
@@ -210,15 +215,13 @@ LLVMValueRef process_expression(NodeExpression* expr, function_state function,
 void process_statement(NodeStatement* statement, function_state function,
 	program_state program) {
 	if (statement->is_assign) {
-		LLVMValueRef variable = NULL;
-		variable = symbol_get(function.symbols, statement->identifier);
-		if (variable == NULL)
-			variable = symbol_get(program.symbols, statement->identifier);
+		LLVMValueRef variable = get_closest_symbol(statement->identifier,
+			function, program);
 
 		if (variable == NULL) {
-			fprintf(stderr, "Symbol not recognised: %s\n", statement->identifier);
 			return;
 		}
+
 		LLVMBuildStore(
 			function.builder,
 			process_expression(statement->inner.assign->expr, function, program),
@@ -290,6 +293,76 @@ void process_if(NodeIf* if_node, function_state function, program_state program)
 
 	LLVMPositionBuilderAtEnd(function.builder, continue_blockref);
 }
+void process_for(NodeFor* _for, function_state function, program_state program) {
+	/*
+	 * Flow idea:
+	 main_block:
+	 <initialize>
+	 jump for_condition
+	 for_condition:
+	 branch <expr>, for_block
+	 jump outside_for
+	 for_block:
+	 [...]
+	 jump for_condition
+	 outside_for:
+	 */
+	LLVMBasicBlockRef condition_blockref = LLVMAppendBasicBlock(
+		function.function_ref, "for_condition");
+	LLVMBasicBlockRef for_blockref = LLVMAppendBasicBlock(
+		function.function_ref, "for_block");
+	LLVMBasicBlockRef outside_blockref = LLVMAppendBasicBlock(
+		function.function_ref, "outside_for");
+
+	LLVMValueRef it_var = get_closest_symbol(_for->id, function, program);
+	if (it_var == NULL) {
+		fprintf(stderr, "Symbol %s not found\n", _for->id);
+		return;
+	}
+	LLVMBuildStore(
+		function.builder,
+		process_expression(_for->start_expr, function, program),
+		it_var
+	);
+	LLVMBuildBr(function.builder, condition_blockref);
+	LLVMPositionBuilderAtEnd(function.builder, condition_blockref);
+
+	LLVMValueRef cond = LLVMBuildICmp(
+		function.builder,
+		(_for->direction == UP)? LLVMIntSLE : LLVMIntSGE,
+		LLVMBuildLoad(function.builder, it_var, "load_itvar"),
+		process_expression(_for->stop_expr, function, program),
+		"forcond"
+	);
+
+	LLVMBuildCondBr(
+		function.builder,
+		cond,
+		for_blockref,
+		outside_blockref
+	);
+
+	LLVMPositionBuilderAtEnd(function.builder, for_blockref);
+	process_block(_for->block, function, program);
+	LLVMValueRef new_val_it;
+	if (_for->direction == UP)
+		new_val_it = LLVMBuildAdd(function.builder,
+			LLVMBuildLoad(function.builder, it_var, "load_itvar"),
+			LLVMConstInt(LLVMInt32Type(), 1, 0), "add_it_var");
+	else
+		new_val_it = LLVMBuildSub(function.builder,
+			LLVMBuildLoad(function.builder, it_var, "load_itvar"),
+			LLVMConstInt(LLVMInt32Type(), 1, 0), "sub_it_var");
+
+	LLVMBuildStore(
+		function.builder,
+		new_val_it,
+		it_var
+	);
+	LLVMBuildBr(function.builder, condition_blockref);
+
+	LLVMPositionBuilderAtEnd(function.builder, outside_blockref);
+}
 void process_grouping(NodeGrouping* grouping, function_state function,
 	program_state program) {
 	if (grouping == NULL)
@@ -302,6 +375,7 @@ void process_grouping(NodeGrouping* grouping, function_state function,
 			process_if(grouping->inner._if, function, program);
 			break;
 		case FOR:
+			process_for(grouping->inner._for, function, program);
 			break;
 		case WHILE:
 			break;
