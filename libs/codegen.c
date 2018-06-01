@@ -271,6 +271,30 @@ void process_statement(NodeStatement* statement, function_state function,
 			ptr,
 			program.symbols
 		);
+	} else if (strcmp(statement->identifier, "dec") == 0
+		|| strcmp(statement->identifier, "inc") == 0) {
+		if (get_num_arguments(statement->inner.func_call_args) != 1) {
+			fprintf(stderr, "Inc/dec call with wrong num of args\n");
+			return;
+		}
+		char* id = get_name_if_arg_is_identifier(statement->inner.func_call_args);
+		if (id == NULL) {
+			fprintf(stderr, "Inc/dec was not passed a pointer\n");
+			return;
+		}
+		LLVMValueRef ptr = get_closest_symbol(id, function, program);
+		if (ptr == NULL) {
+			fprintf(stderr, "Symbol not found\n");
+			return;
+		}
+		int direction = (strcmp(statement->identifier, "inc") == 0)? 1:-1;
+		LLVMBuildStore(
+			function.builder,
+			LLVMBuildAdd(function.builder,
+				LLVMBuildLoad(function.builder, ptr, "incdec_result"),
+				LLVMConstInt(LLVMInt32Type(), direction, 0), "incdirection"),
+			ptr
+		);
 	}
 }
 void process_block(NodeBlock* block, function_state function,
