@@ -297,13 +297,14 @@ void process_for(NodeFor* _for, function_state function, program_state program) 
 	/*
 	 * Flow idea:
 	 main_block:
-	 <initialize>
+	 i = <start_expr>
 	 jump for_condition
 	 for_condition:
 	 branch <expr>, for_block
 	 jump outside_for
 	 for_block:
 	 [...]
+	 i = +|- 1
 	 jump for_condition
 	 outside_for:
 	 */
@@ -363,6 +364,43 @@ void process_for(NodeFor* _for, function_state function, program_state program) 
 
 	LLVMPositionBuilderAtEnd(function.builder, outside_blockref);
 }
+void process_while(NodeWhile* _while, function_state function,
+	program_state program) {
+	/*
+	 * Flow idea:
+	 main_block:
+	 jump while_condition
+	 while_condition:
+	 branch <expr>, while_block
+	 jump outside_while
+	 while_block:
+	 [...]
+	 jump while_condition
+	 outside_while:
+	 */
+	LLVMBasicBlockRef condition_blockref = LLVMAppendBasicBlock(
+		function.function_ref, "while_condition");
+	LLVMBasicBlockRef while_blockref = LLVMAppendBasicBlock(
+		function.function_ref, "while_block");
+	LLVMBasicBlockRef outside_blockref = LLVMAppendBasicBlock(
+		function.function_ref, "outside_while");
+
+	LLVMBuildBr(function.builder, condition_blockref);
+	LLVMPositionBuilderAtEnd(function.builder, condition_blockref);
+
+	LLVMBuildCondBr(
+		function.builder,
+		process_expression(_while->condition, function, program),
+		while_blockref,
+		outside_blockref
+	);
+
+	LLVMPositionBuilderAtEnd(function.builder, while_blockref);
+	process_block(_while->block, function, program);
+	LLVMBuildBr(function.builder, condition_blockref);
+
+	LLVMPositionBuilderAtEnd(function.builder, outside_blockref);
+}
 void process_grouping(NodeGrouping* grouping, function_state function,
 	program_state program) {
 	if (grouping == NULL)
@@ -378,6 +416,7 @@ void process_grouping(NodeGrouping* grouping, function_state function,
 			process_for(grouping->inner._for, function, program);
 			break;
 		case WHILE:
+			process_while(grouping->inner._while, function, program);
 			break;
 	}
 
