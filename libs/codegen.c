@@ -28,6 +28,7 @@
 
 typedef struct function_state {
 	LLVMBuilderRef builder;
+	LLVMValueRef function_ref;
 	table_t* symbols;
 } function_state;
 typedef struct program_state {
@@ -36,8 +37,10 @@ typedef struct program_state {
 	table_t* symbols;
 } program_state;
 
-//Need forward declaration for this one since it is used so much.
+//Need forward declaration for these since they are used so much.
 LLVMValueRef process_expression(NodeExpression* expr, function_state function,
+	program_state program);
+void process_grouping(NodeGrouping* grouping, function_state function,
 	program_state program);
 
 void gen_print_number(LLVMBuilderRef builder, LLVMValueRef var, 
@@ -213,13 +216,61 @@ void process_statement(NodeStatement* statement, function_state function,
 		);
 	}
 }
+void process_block(NodeBlock* block, function_state function,
+	program_state program) {
+	if (block == NULL)
+		return;
+
+	if (block->is_grouping) {
+		process_grouping(block->inner.grouping, function, program);
+	} else {
+		process_statement(block->inner.statement, function, program);
+	}
+}
 void process_grouping(NodeGrouping* grouping, function_state function,
 	program_state program) {
 	if (grouping == NULL)
 		return;
-	if (grouping->type == STATEMENT) {
-		process_statement(grouping->inner.statement, function, program);
+	switch (grouping->type) {
+		case STATEMENT:
+			process_statement(grouping->inner.statement, function, program);
+			break;
+		case IF:
+			;
+			NodeIf* if_node = grouping->inner._if;
+
+			LLVMBasicBlockRef then_blockref = LLVMAppendBasicBlock(
+				function.function_ref, "then_block");
+			LLVMBasicBlockRef else_blockref = LLVMAppendBasicBlock(
+				function.function_ref, "else_block");
+			LLVMBasicBlockRef continue_blockref = LLVMAppendBasicBlock(
+				function.function_ref, "continue_block");
+
+			LLVMBuildCondBr(
+				function.builder,
+				process_expression(if_node->expr, function, program),
+				then_blockref,
+				else_blockref
+			);
+
+			LLVMPositionBuilderAtEnd(function.builder, then_blockref);
+			process_block(if_node->block, function, program);
+			LLVMBuildBr(function.builder, continue_blockref);
+
+			LLVMPositionBuilderAtEnd(function.builder, else_blockref);
+			if (if_node->_else != NULL)
+				process_block(if_node->_else->block, function, program);
+
+			LLVMBuildBr(function.builder, continue_blockref);
+
+			LLVMPositionBuilderAtEnd(function.builder, continue_blockref);
+			break;
+		case FOR:
+			break;
+		case WHILE:
+			break;
 	}
+
 	process_grouping(grouping->next_grouping, function, program);
 }
 //Since this function can be called for the global scope ("main function") 
@@ -256,7 +307,7 @@ void process_ast(NodeProgram* root, LLVMModuleRef mod) {
 
 	table_t* function_symbols = malloc_assert(sizeof(table_t));
 	symbol_table_init(function_symbols);
-	function_state main_state = {main_builder, function_symbols};
+	function_state main_state = {main_builder, mainf, function_symbols};
 
 	//load global symbols
 	process_constdecl(root->constdecl, main_state, global_state, global_symbols);
