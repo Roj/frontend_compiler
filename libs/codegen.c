@@ -22,6 +22,10 @@
 #define DUMP 1
 #define TARGET_MACHINE_TRIPLE "x86_64-pc-linux-gnu" "x86_64-pc-linux-gnu" 
 
+#define symbol_table_init(st) table_init((st), H_STRING, NULL, NULL)
+#define symbol_exists(st, sn) table_contains((st), (hvalue_t) (sn))
+#define symbol_get(st, sn) (LLVMValueRef) table_get((st), (hvalue_t) (sn))
+
 typedef struct function_state {
 	LLVMBuilderRef builder;
 	table_t* symbols;
@@ -109,7 +113,13 @@ LLVMValueRef process_factor(NodeFactor* factor, function_state function,
 			fprintf(stderr, "call not implemented as factor\n");
 			break;
 		case IDENT:
-			fprintf(stderr, "ident not implemented as factor\n");
+			if (symbol_exists(function.symbols, factor->fac.id))
+				return symbol_get(function.symbols, factor->fac.id);
+			
+			if (symbol_exists(program.symbols, factor->fac.id))
+				return symbol_get(program.symbols, factor->fac.id);
+
+			fprintf(stderr, "identifier %s not found\n", factor->fac.id);
 			break;
 		case ARRIDX:
 			fprintf(stderr, "arridx not implemented as factor\n");
@@ -119,8 +129,6 @@ LLVMValueRef process_factor(NodeFactor* factor, function_state function,
 		case SUBEXPR:
 			return process_expression(factor->fac.subexpr, function, program);
 	}
-	return NULL;
-	//TODO: not, neg, call, ident, arridx, subexpr
 	return NULL;
 }
 LLVMValueRef process_term_prime(NodeTermPrime* termprime,
@@ -214,6 +222,19 @@ void process_grouping(NodeGrouping* grouping, function_state function,
 	}
 	process_grouping(grouping->next_grouping, function, program);
 }
+//Since this function can be called for the global scope ("main function") 
+//or for a specific function, we need to be able to tell which symbol table
+//we should add to.
+void process_constdecl(NodeConstDecl* decl, function_state function,
+	program_state program, table_t* symbols) {
+	if (decl == NULL)
+		return;
+
+	table_set(symbols, (hvalue_t) decl->name,
+		(hvalue_t) process_expression(decl->expression, function, program));
+
+	process_constdecl(decl->next_constdecl, function, program, symbols);
+}
 void process_ast(NodeProgram* root, LLVMModuleRef mod) {
 	//main function declaration
 	LLVMTypeRef main_ret = LLVMFunctionType(LLVMInt32Type(), NULL, 0, 0);
@@ -230,20 +251,23 @@ void process_ast(NodeProgram* root, LLVMModuleRef mod) {
 	LLVMPositionBuilderAtEnd(main_builder, main_block);
 
 	table_t* global_symbols = malloc_assert(sizeof(table_t));
-	table_init(global_symbols, H_STRING, NULL, NULL);
-	program_state program_state = {mod, printf_, global_symbols};
+	symbol_table_init(global_symbols);
+	program_state global_state = {mod, printf_, global_symbols};
 
 	table_t* function_symbols = malloc_assert(sizeof(table_t));
-	table_init(function_symbols, H_STRING, NULL, NULL);
+	symbol_table_init(function_symbols);
 	function_state main_state = {main_builder, function_symbols};
 
-	process_grouping(root->grouping, main_state, program_state);
+	//load global symbols
+	process_constdecl(root->constdecl, main_state, global_state, global_symbols);
+	
+	process_grouping(root->grouping, main_state, global_state);
 
 	table_destroy(main_state.symbols);
 	free(main_state.symbols);
 
-	table_destroy(program_state.symbols);
-	free(program_state.symbols);
+	table_destroy(global_state.symbols);
+	free(global_state.symbols);
 
 	//Always return 0.
 	LLVMBuildRet(main_builder, LLVMConstInt(LLVMInt32Type(), 0, 0));
