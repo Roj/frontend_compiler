@@ -223,7 +223,11 @@ NodeTypeDecl* TypeDeclarations() {
 		case KW_VAR:
 			match(KW_VAR);
 			node = TypeDecl();
-			node->next_typedecl = TypeDeclarations();
+			NodeTypeDecl* final_node = node;
+			while (final_node->next_typedecl != NULL) {
+				final_node = final_node->next_typedecl;
+			}
+			final_node->next_typedecl = TypeDeclarations();
 			break;
 		default:
 			break; //TypeDeclarations -> epsilon
