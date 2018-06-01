@@ -323,6 +323,7 @@ void process_typedecl(NodeTypeDecl* typedecl, function_state function,
 			LLVMBuildAlloca(function.builder, LLVMInt32Type(), variable->name)
 		);
 	}
+	process_typedecl(typedecl->next_typedecl, function, program, symbols);
 }
 void process_ast(NodeProgram* root, LLVMModuleRef mod) {
 	//main function declaration
