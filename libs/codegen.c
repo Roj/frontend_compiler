@@ -555,15 +555,24 @@ void process_parameters(NodeParams* params, function_state function) {
 	}
 }
 void process_funcdecl(NodeFunction* fdecl, program_state global_state) {
-	//check if forward, in that case do not put the signature again.
-	int num_params = get_num_params(fdecl->params);
-	//TODO: does llvm keep the memory or copy it? free in second case.
-	LLVMTypeRef* params = malloc(sizeof(LLVMTypeRef) * num_params);
-	for(int i = 0; i < num_params; i++)
-		params[i] = LLVMInt32Type();
-	LLVMTypeRef ret_type = LLVMFunctionType(LLVMInt32Type(), params,
-		num_params, false);
-	LLVMValueRef fref = LLVMAddFunction(global_state.mod, fdecl->name, ret_type);
+	LLVMValueRef fref = NULL;
+	if (! symbol_exists(global_state.symbols, fdecl->name)) {
+		int num_params = get_num_params(fdecl->params);
+		//TODO: does llvm keep the memory or copy it? free in second case.
+		LLVMTypeRef* params = malloc(sizeof(LLVMTypeRef) * num_params);
+		for(int i = 0; i < num_params; i++)
+			params[i] = LLVMInt32Type();
+		LLVMTypeRef ret_type = LLVMFunctionType(LLVMInt32Type(), params,
+			num_params, false);
+		LLVMValueRef fref = LLVMAddFunction(global_state.mod, fdecl->name, ret_type);
+		symbol_add(global_state.symbols, fdecl->name, fref);
+	}
+	//We put in here in case there are duplicated forwards. Shouldn't cause any
+	//errors.
+	if (fdecl->is_forward)
+		return;
+
+	fref = symbol_get(global_state.symbols, fdecl->name);
 
 	LLVMBasicBlockRef block = LLVMAppendBasicBlock(fref, "_functionstart");
 	LLVMBuilderRef builder = LLVMCreateBuilder();
@@ -586,18 +595,25 @@ void process_funcdecl(NodeFunction* fdecl, program_state global_state) {
 
 	LLVMBuildRet(builder, LLVMBuildLoad(builder, retholder, "load_retvalue"));
 
-	symbol_add(global_state.symbols, fdecl->name, fref);
 }
 void process_procdecl(NodeProcedure* pdecl, program_state global_state) {
-	//check if forward, in that case do not put the signature again.
-	int num_params = get_num_params(pdecl->params);
-	//TODO: does llvm keep the memory or copy it? free in second case.
-	LLVMTypeRef* params = malloc(sizeof(LLVMTypeRef) * num_params);
-	for(int i = 0; i < num_params; i++)
-		params[i] = LLVMInt32Type();
-	LLVMTypeRef ret_type = LLVMFunctionType(LLVMVoidType(), params,
-		num_params, false);
-	LLVMValueRef pref = LLVMAddFunction(global_state.mod, pdecl->name, ret_type);
+	LLVMValueRef pref = NULL;
+	if (! symbol_exists(global_state.symbols, pdecl->name)) {
+		int num_params = get_num_params(pdecl->params);
+		//TODO: does llvm keep the memory or copy it? free in second case.
+		LLVMTypeRef* params = malloc(sizeof(LLVMTypeRef) * num_params);
+		for(int i = 0; i < num_params; i++)
+			params[i] = LLVMInt32Type();
+		LLVMTypeRef ret_type = LLVMFunctionType(LLVMVoidType(), params,
+			num_params, false);
+		pref = LLVMAddFunction(global_state.mod, pdecl->name, ret_type);
+	}
+	//We put in here in case there are duplicated forwards. Shouldn't cause any
+	//errors.
+	if (pdecl->is_forward)
+		return;
+
+	pref = symbol_get(global_state.symbols, pdecl->name);
 
 	LLVMBasicBlockRef block = LLVMAppendBasicBlock(pref, "_procstart");
 	LLVMBuilderRef builder = LLVMCreateBuilder();
