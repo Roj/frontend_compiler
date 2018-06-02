@@ -29,7 +29,9 @@
 
 typedef struct function_state {
 	LLVMBuilderRef builder;
-	LLVMValueRef function_ref;
+	LLVMValueRef ref;
+	LLVMTypeRef type;
+	char* name;
 	table_t* symbols;
 } function_state;
 typedef struct program_state {
@@ -346,11 +348,11 @@ void process_if(NodeIf* if_node, function_state function, program_state program)
 	 continue_block:
 	 */
 	LLVMBasicBlockRef then_blockref = LLVMAppendBasicBlock(
-		function.function_ref, "then_block");
+		function.ref, "then_block");
 	LLVMBasicBlockRef else_blockref = LLVMAppendBasicBlock(
-		function.function_ref, "else_block");
+		function.ref, "else_block");
 	LLVMBasicBlockRef continue_blockref = LLVMAppendBasicBlock(
-		function.function_ref, "continue_block");
+		function.ref, "continue_block");
 
 	LLVMBuildCondBr(
 		function.builder,
@@ -387,11 +389,11 @@ void process_for(NodeFor* _for, function_state function, program_state program) 
 	 outside_for:
 	 */
 	LLVMBasicBlockRef condition_blockref = LLVMAppendBasicBlock(
-		function.function_ref, "for_condition");
+		function.ref, "for_condition");
 	LLVMBasicBlockRef for_blockref = LLVMAppendBasicBlock(
-		function.function_ref, "for_block");
+		function.ref, "for_block");
 	LLVMBasicBlockRef outside_blockref = LLVMAppendBasicBlock(
-		function.function_ref, "outside_for");
+		function.ref, "outside_for");
 
 	LLVMValueRef it_var = get_closest_symbol(_for->id, function, program);
 	if (it_var == NULL) {
@@ -457,11 +459,11 @@ void process_while(NodeWhile* _while, function_state function,
 	 outside_while:
 	 */
 	LLVMBasicBlockRef condition_blockref = LLVMAppendBasicBlock(
-		function.function_ref, "while_condition");
+		function.ref, "while_condition");
 	LLVMBasicBlockRef while_blockref = LLVMAppendBasicBlock(
-		function.function_ref, "while_block");
+		function.ref, "while_block");
 	LLVMBasicBlockRef outside_blockref = LLVMAppendBasicBlock(
-		function.function_ref, "outside_while");
+		function.ref, "outside_while");
 
 	LLVMBuildBr(function.builder, condition_blockref);
 	LLVMPositionBuilderAtEnd(function.builder, condition_blockref);
@@ -535,7 +537,7 @@ void process_parameters(NodeParams* params, function_state function) {
 		//TODO: check type to differentiate b/w array and int.
 		NodeVariables* variable = params->variables;
 		while (variable) {
-			LLVMValueRef passed_value = LLVMGetParam(function.function_ref, i);
+			LLVMValueRef passed_value = LLVMGetParam(function.ref, i);
 			LLVMValueRef ptr = LLVMBuildAlloca(function.builder, 
 				LLVMInt32Type(), variable->name);
 			LLVMBuildStore(
@@ -581,7 +583,8 @@ void process_funcdecl(NodeFunction* fdecl, program_state global_state) {
 	table_t* function_symbols = malloc_assert(sizeof(table_t));
 	symbol_table_init(function_symbols);
 
-	function_state fstate = {builder, fref, function_symbols};
+	function_state fstate = {builder, fref, LLVMTypeOf(fref), 
+		fdecl->name, function_symbols};
 
 	//In Pascal, the function name is a variable that can be used as a return
 	//value holder.
@@ -622,7 +625,8 @@ void process_procdecl(NodeProcedure* pdecl, program_state global_state) {
 	table_t* function_symbols = malloc_assert(sizeof(table_t));
 	symbol_table_init(function_symbols);
 
-	function_state fstate = {builder, pref, function_symbols};
+	function_state fstate = {builder, pref, LLVMTypeOf(pref),
+		pdecl->name, function_symbols};
 
 	//Process code, like in the main function.
 	process_parameters(pdecl->params, fstate);
@@ -671,7 +675,8 @@ void process_ast(NodeProgram* root, LLVMModuleRef mod) {
 
 	table_t* function_symbols = malloc_assert(sizeof(table_t));
 	symbol_table_init(function_symbols);
-	function_state main_state = {main_builder, mainf, function_symbols};
+	function_state main_state = {main_builder, mainf, main_ret, 
+		"main", function_symbols};
 
 	//load global symbols
 	symbol_add(global_symbols, "printf", printf_);
