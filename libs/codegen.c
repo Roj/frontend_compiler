@@ -680,7 +680,9 @@ void process_procdecl(NodeProcedure* pdecl, program_state global_state) {
 	table_t* function_symbols = malloc_assert(sizeof(table_t));
 	symbol_table_init(function_symbols);
 
-	function_state fstate = {builder, pref, LLVMTypeOf(pref),
+	//TypeOf(value that is a function) gives a function pointer. Therefore
+	//'GetReturnType' here serves as a way of de-referencing it.
+	function_state fstate = {builder, pref, LLVMGetReturnType(LLVMTypeOf(pref)),
 		pdecl->name, function_symbols};
 
 	//Process code, like in the main function.
