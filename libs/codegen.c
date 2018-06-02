@@ -741,6 +741,7 @@ void process_ast(NodeProgram* root, LLVMModuleRef mod) {
 	process_fpdecl(root->fpdecl, global_state);
 	//main block code
 	process_typedecl(root->typedecl, main_state, global_state, global_symbols);
+	process_typedecl(root->typedecl2, main_state, global_state, global_symbols);
 	process_grouping(root->grouping, main_state, global_state);
 
 	table_destroy(main_state.symbols);
