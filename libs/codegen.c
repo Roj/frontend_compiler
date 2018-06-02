@@ -130,6 +130,10 @@ LLVMValueRef process_funccall(char* fname, NodeArguments* node_args,
 		fprintf(stderr, "function symbol not found: %s\n", fname);
 		return NULL;
 	}
+	//Handle recursion case.
+	if (strcmp(fname, function.name) == 0)
+		func = function.ref;
+
 	int num_args_passed = get_num_arguments(node_args);
 	LLVMValueRef* args = malloc(sizeof(LLVMValueRef) * num_args_passed);
 	for (int i = 0; i < num_args_passed; i++) {
