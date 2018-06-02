@@ -27,6 +27,8 @@
 #define symbol_get(st, sn) (LLVMValueRef) table_get((st), (hvalue_t) (sn))
 #define symbol_add(st, sn, sv) table_set((st), (hvalue_t) (sn), (hvalue_t) (sv))
 
+#define block_terminated(builder) (LLVMGetBasicBlockTerminator(LLVMGetInsertBlock((builder))) !=  NULL)
+
 typedef struct function_state {
 	LLVMBuilderRef builder;
 	LLVMValueRef ref;
@@ -138,8 +140,7 @@ LLVMValueRef process_funccall(char* fname, NodeArguments* node_args,
 		args[i] = process_expression(node_args->arg.expr, function, program);
 		node_args = node_args->next_arg;
 	}
-	return LLVMBuildCall(function.builder, func, args, num_args_passed,
-		"");
+	return LLVMBuildCall(function.builder, func, args, num_args_passed, "");
 }
 LLVMValueRef process_factor(NodeFactor* factor, function_state function,
 	program_state program) {
@@ -247,6 +248,8 @@ LLVMValueRef process_expression(NodeExpression* expr, function_state function,
 }
 void process_statement(NodeStatement* statement, function_state function,
 	program_state program) {
+	if (block_terminated(function.builder))
+		return;
 	if (statement->is_assign) {
 		LLVMValueRef variable = get_closest_symbol(statement->identifier,
 			function, program);
@@ -263,6 +266,18 @@ void process_statement(NodeStatement* statement, function_state function,
 		return;
 	} 
 	if (statement->is_exit) {
+		if (strcmp(function.name, "main") == 0) {
+			//Always return 0.
+			LLVMBuildRet(function.builder, LLVMConstInt(LLVMInt32Type(), 0, 0));
+			return;
+		}
+		if (LLVMGetReturnType(function.type) == LLVMVoidType()) {
+			LLVMBuildRetVoid(function.builder);
+			return;
+		}
+		LLVMBuildRet(function.builder, 
+			LLVMBuildLoad(function.builder, 
+				symbol_get(function.symbols, function.name), ""));
 		return;
 	}
 	//Function (or procedure) call
@@ -363,13 +378,15 @@ void process_if(NodeIf* if_node, function_state function, program_state program)
 
 	LLVMPositionBuilderAtEnd(function.builder, then_blockref);
 	process_block(if_node->block, function, program);
-	LLVMBuildBr(function.builder, continue_blockref);
+	if (! block_terminated(function.builder))
+		LLVMBuildBr(function.builder, continue_blockref);
 
 	LLVMPositionBuilderAtEnd(function.builder, else_blockref);
 	if (if_node->_else != NULL)
 		process_block(if_node->_else->block, function, program);
 
-	LLVMBuildBr(function.builder, continue_blockref);
+	if (! block_terminated(function.builder))
+		LLVMBuildBr(function.builder, continue_blockref);
 
 	LLVMPositionBuilderAtEnd(function.builder, continue_blockref);
 }
@@ -425,23 +442,24 @@ void process_for(NodeFor* _for, function_state function, program_state program) 
 
 	LLVMPositionBuilderAtEnd(function.builder, for_blockref);
 	process_block(_for->block, function, program);
-	LLVMValueRef new_val_it;
-	if (_for->direction == UP)
-		new_val_it = LLVMBuildAdd(function.builder,
-			LLVMBuildLoad(function.builder, it_var, "load_itvar"),
-			LLVMConstInt(LLVMInt32Type(), 1, 0), "add_it_var");
-	else
-		new_val_it = LLVMBuildSub(function.builder,
-			LLVMBuildLoad(function.builder, it_var, "load_itvar"),
-			LLVMConstInt(LLVMInt32Type(), 1, 0), "sub_it_var");
+	if (! block_terminated(function.builder)) {
+		LLVMValueRef new_val_it;
+		if (_for->direction == UP)
+			new_val_it = LLVMBuildAdd(function.builder,
+				LLVMBuildLoad(function.builder, it_var, "load_itvar"),
+				LLVMConstInt(LLVMInt32Type(), 1, 0), "add_it_var");
+		else
+			new_val_it = LLVMBuildSub(function.builder,
+				LLVMBuildLoad(function.builder, it_var, "load_itvar"),
+				LLVMConstInt(LLVMInt32Type(), 1, 0), "sub_it_var");
 
-	LLVMBuildStore(
-		function.builder,
-		new_val_it,
-		it_var
-	);
-	LLVMBuildBr(function.builder, condition_blockref);
-
+		LLVMBuildStore(
+			function.builder,
+			new_val_it,
+			it_var
+		);
+		LLVMBuildBr(function.builder, condition_blockref);
+	}
 	LLVMPositionBuilderAtEnd(function.builder, outside_blockref);
 }
 void process_while(NodeWhile* _while, function_state function,
@@ -477,13 +495,14 @@ void process_while(NodeWhile* _while, function_state function,
 
 	LLVMPositionBuilderAtEnd(function.builder, while_blockref);
 	process_block(_while->block, function, program);
-	LLVMBuildBr(function.builder, condition_blockref);
+	if (! block_terminated(function.builder))
+		LLVMBuildBr(function.builder, condition_blockref);
 
 	LLVMPositionBuilderAtEnd(function.builder, outside_blockref);
 }
 void process_grouping(NodeGrouping* grouping, function_state function,
 	program_state program) {
-	if (grouping == NULL)
+	if (grouping == NULL || block_terminated(function.builder))
 		return;
 	switch (grouping->type) {
 		case STATEMENT:
