@@ -137,7 +137,7 @@ LLVMValueRef process_funccall(char* fname, NodeArguments* node_args,
 		node_args = node_args->next_arg;
 	}
 	return LLVMBuildCall(function.builder, func, args, num_args_passed,
-		"funccallvalue");
+		"");
 }
 LLVMValueRef process_factor(NodeFactor* factor, function_state function,
 	program_state program) {
@@ -588,7 +588,34 @@ void process_funcdecl(NodeFunction* fdecl, program_state global_state) {
 
 	symbol_add(global_state.symbols, fdecl->name, fref);
 }
-void process_procdecl(NodeProcedure* decl, program_state global_state) {
+void process_procdecl(NodeProcedure* pdecl, program_state global_state) {
+	//check if forward, in that case do not put the signature again.
+	int num_params = get_num_params(pdecl->params);
+	//TODO: does llvm keep the memory or copy it? free in second case.
+	LLVMTypeRef* params = malloc(sizeof(LLVMTypeRef) * num_params);
+	for(int i = 0; i < num_params; i++)
+		params[i] = LLVMInt32Type();
+	LLVMTypeRef ret_type = LLVMFunctionType(LLVMVoidType(), params,
+		num_params, false);
+	LLVMValueRef pref = LLVMAddFunction(global_state.mod, pdecl->name, ret_type);
+
+	LLVMBasicBlockRef block = LLVMAppendBasicBlock(pref, "_procstart");
+	LLVMBuilderRef builder = LLVMCreateBuilder();
+	LLVMPositionBuilderAtEnd(builder, block);
+
+	table_t* function_symbols = malloc_assert(sizeof(table_t));
+	symbol_table_init(function_symbols);
+
+	function_state fstate = {builder, pref, function_symbols};
+
+	//Process code, like in the main function.
+	process_parameters(pdecl->params, fstate);
+	process_typedecl(pdecl->typedecl, fstate, global_state, function_symbols);
+	process_block(pdecl->block, fstate, global_state);
+
+	LLVMBuildRetVoid(builder);
+
+	symbol_add(global_state.symbols, pdecl->name, pref);
 }
 void process_fpdecl(NodeFPDecl* fpdecl, program_state global_state) {
 	if (fpdecl == NULL)
