@@ -47,17 +47,36 @@ LLVMValueRef process_expression(NodeExpression* expr, function_state function,
 void process_grouping(NodeGrouping* grouping, function_state function,
 	program_state program);
 
-void gen_print_number(LLVMBuilderRef builder, LLVMValueRef var,
-	table_t* global_symbols) {
-	if (! symbol_exists(global_symbols, "_printf_format"))
-		symbol_add(global_symbols, "_printf_format",
-			LLVMBuildGlobalStringPtr(builder, "%d.\n", "_printf_format"));
+void gen_print_generic(LLVMBuilderRef builder, LLVMValueRef var,
+	char* format_symb_name, char* format_str, table_t* global_symbols) {
 
-	LLVMValueRef format = symbol_get(global_symbols, "_printf_format");
+	if (! symbol_exists(global_symbols, format_symb_name))
+		symbol_add(global_symbols, format_symb_name,
+			LLVMBuildGlobalStringPtr(builder, format_str, format_symb_name));
+
+	LLVMValueRef format = symbol_get(global_symbols, format_symb_name);
 	LLVMValueRef PrintfArgs[] = {format, var};
 
 	LLVMBuildCall(builder, symbol_get(global_symbols, "printf"),
 		PrintfArgs, 2, "printf");
+}
+void gen_print_number(LLVMBuilderRef builder, LLVMValueRef var,
+	table_t* global_symbols, bool newline) {
+	if (newline)
+		gen_print_generic(builder, var, "_printf_format_int_nl",
+			"%d.\n", global_symbols);
+	else
+		gen_print_generic(builder, var, "_printf_format_int",
+			"%d.", global_symbols);
+}
+void gen_print_literal(LLVMBuilderRef builder, LLVMValueRef var,
+	table_t* global_symbols, bool newline) {
+	if (newline)
+		gen_print_generic(builder, var, "_printf_format_str_nl",
+			"%s\n", global_symbols);
+	else
+		gen_print_generic(builder, var, "_printf_format_str",
+			"%s", global_symbols);
 }
 void read_number(LLVMBuilderRef builder, LLVMValueRef ptr,
 	table_t* global_symbols) {
@@ -286,12 +305,23 @@ void process_statement(NodeStatement* statement, function_state function,
 	}
 	//Function (or procedure) call
 	NodeArguments* args = statement->inner.func_call_args;
-	if (strcmp(statement->identifier, "writeln") == 0)  {
-		gen_print_number(
-			function.builder, 
-			process_expression(args->arg.expr, function, program),
-			program.symbols
-		);
+	if (strcmp(statement->identifier, "writeln") == 0 ||
+		strcmp(statement->identifier, "write") == 0)  {
+		bool newline = strcmp(statement->identifier, "writeln") == 0;
+		if (args->is_expr)
+			gen_print_number(
+				function.builder,
+				process_expression(args->arg.expr, function, program),
+				program.symbols,
+				newline);
+		else
+			gen_print_literal(
+				function.builder,
+				LLVMBuildGlobalStringPtr(function.builder,
+					args->arg.literal->value, "literal"),
+				program.symbols,
+				newline);
+
 	} else if (strcmp(statement->identifier, "readln") == 0) {
 		if (get_num_arguments(statement->inner.func_call_args) != 1) {
 			fprintf(stderr, "Readln call with wrong num of args\n");
