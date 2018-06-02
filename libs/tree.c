@@ -16,6 +16,15 @@ int get_num_arguments(NodeArguments* args) {
 	return i;
 }
 
+int get_num_params(NodeParams* params) {
+	int i = 0;
+	while (params) {
+		i++;
+		params = params->next_param;
+	}
+	return i;
+}
+
 //Something a little bit annoying is that arguments can be pointers to memory,
 //but we are passing them as expressions. An identifier inside an expression 
 //has the value copied (i.e. the pointer is de-referenced).

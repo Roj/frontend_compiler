@@ -119,6 +119,26 @@ LLVMValueRef handle_expr_op(LLVMBuilderRef builder,
 	}
 	return NULL;
 }
+LLVMValueRef process_funccall(char* fname, NodeArguments* node_args, 
+	function_state function, program_state program) {
+	LLVMValueRef func = get_closest_symbol(fname, function, program);
+	if (func == NULL) {
+		fprintf(stderr, "function symbol not found: %s\n", fname);
+		return NULL;
+	}
+	int num_args_passed = get_num_arguments(node_args);
+	LLVMValueRef* args = malloc(sizeof(LLVMValueRef) * num_args_passed);
+	for (int i = 0; i < num_args_passed; i++) {
+		if (! node_args->is_expr) { //TODO
+			fprintf(stderr, "passing value is not expression\n");
+			return NULL;
+		}
+		args[i] = process_expression(node_args->arg.expr, function, program);
+		node_args = node_args->next_arg;
+	}
+	return LLVMBuildCall(function.builder, func, args, num_args_passed,
+		"funccallvalue");
+}
 LLVMValueRef process_factor(NodeFactor* factor, function_state function,
 	program_state program) {
 	switch (factor->type) {
@@ -135,8 +155,8 @@ LLVMValueRef process_factor(NodeFactor* factor, function_state function,
 				"minusfactor"
 			);
 		case CALL:
-			fprintf(stderr, "call not implemented as factor\n");
-			break;
+			return process_funccall(factor->fac.call->fun_name,
+				factor->fac.call->args, function, program);
 		case IDENT:
 			;
 			LLVMValueRef val = get_closest_symbol(factor->fac.id, function, program);
@@ -295,6 +315,9 @@ void process_statement(NodeStatement* statement, function_state function,
 				LLVMConstInt(LLVMInt32Type(), direction, 0), "incdirection"),
 			ptr
 		);
+	} else {
+		process_funccall(statement->identifier, statement->inner.func_call_args,
+			function, program);
 	}
 }
 void process_block(NodeBlock* block, function_state function,
@@ -506,6 +529,78 @@ void process_typedecl(NodeTypeDecl* typedecl, function_state function,
 	}
 	process_typedecl(typedecl->next_typedecl, function, program, symbols);
 }
+void process_parameters(NodeParams* params, function_state function) {
+	int i = 0;
+	while (params) {
+		//TODO: check type to differentiate b/w array and int.
+		NodeVariables* variable = params->variables;
+		while (variable) {
+			LLVMValueRef passed_value = LLVMGetParam(function.function_ref, i);
+			LLVMValueRef ptr = LLVMBuildAlloca(function.builder, 
+				LLVMInt32Type(), variable->name);
+			LLVMBuildStore(
+				function.builder,
+				passed_value,
+				ptr
+			);
+			symbol_add(
+				function.symbols,
+				variable->name,
+				ptr
+			);
+			variable = variable->next_variables;
+			i++;
+		}
+		params = params->next_param;
+	}
+}
+void process_funcdecl(NodeFunction* fdecl, program_state global_state) {
+	//check if forward, in that case do not put the signature again.
+	int num_params = get_num_params(fdecl->params);
+	//TODO: does llvm keep the memory or copy it? free in second case.
+	LLVMTypeRef* params = malloc(sizeof(LLVMTypeRef) * num_params);
+	for(int i = 0; i < num_params; i++)
+		params[i] = LLVMInt32Type();
+	LLVMTypeRef ret_type = LLVMFunctionType(LLVMInt32Type(), params,
+		num_params, false);
+	LLVMValueRef fref = LLVMAddFunction(global_state.mod, fdecl->name, ret_type);
+
+	LLVMBasicBlockRef block = LLVMAppendBasicBlock(fref, "_functionstart");
+	LLVMBuilderRef builder = LLVMCreateBuilder();
+	LLVMPositionBuilderAtEnd(builder, block);
+
+	table_t* function_symbols = malloc_assert(sizeof(table_t));
+	symbol_table_init(function_symbols);
+
+	function_state fstate = {builder, fref, function_symbols};
+
+	//In Pascal, the function name is a variable that can be used as a return
+	//value holder.
+	LLVMValueRef retholder = LLVMBuildAlloca(builder, LLVMInt32Type(), 
+		fdecl->name);
+	symbol_add(function_symbols, fdecl->name, retholder);
+	//Process code, like in the main function.
+	process_parameters(fdecl->params, fstate);
+	process_typedecl(fdecl->typedecl, fstate, global_state, function_symbols);
+	process_block(fdecl->block, fstate, global_state);
+
+	LLVMBuildRet(builder, LLVMBuildLoad(builder, retholder, "load_retvalue"));
+
+	symbol_add(global_state.symbols, fdecl->name, fref);
+}
+void process_procdecl(NodeProcedure* decl, program_state global_state) {
+}
+void process_fpdecl(NodeFPDecl* fpdecl, program_state global_state) {
+	if (fpdecl == NULL)
+		return;
+
+	if (fpdecl->type == FUNC)
+		process_funcdecl(fpdecl->decl.func, global_state);
+	else
+		process_procdecl(fpdecl->decl.proc, global_state);
+
+	process_fpdecl(fpdecl->next_fpdecl, global_state);
+}
 void process_ast(NodeProgram* root, LLVMModuleRef mod) {
 	//main function declaration
 	LLVMTypeRef main_ret = LLVMFunctionType(LLVMInt32Type(), NULL, 0, 0);
@@ -539,8 +634,10 @@ void process_ast(NodeProgram* root, LLVMModuleRef mod) {
 	symbol_add(global_symbols, "printf", printf_);
 	symbol_add(global_symbols, "scanf", scanf_);
 	process_constdecl(root->constdecl, main_state, global_state, global_symbols);
+	//load functions
+	process_fpdecl(root->fpdecl, global_state);
+	//main block code
 	process_typedecl(root->typedecl, main_state, global_state, global_symbols);
-	
 	process_grouping(root->grouping, main_state, global_state);
 
 	table_destroy(main_state.symbols);
