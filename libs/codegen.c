@@ -633,6 +633,8 @@ void process_procdecl(NodeProcedure* pdecl, program_state global_state) {
 		LLVMTypeRef ret_type = LLVMFunctionType(LLVMVoidType(), params,
 			num_params, false);
 		pref = LLVMAddFunction(global_state.mod, pdecl->name, ret_type);
+		
+		symbol_add(global_state.symbols, pdecl->name, pref);
 	}
 	//We put in here in case there are duplicated forwards. Shouldn't cause any
 	//errors.
@@ -657,8 +659,6 @@ void process_procdecl(NodeProcedure* pdecl, program_state global_state) {
 	process_block(pdecl->block, fstate, global_state);
 
 	LLVMBuildRetVoid(builder);
-
-	symbol_add(global_state.symbols, pdecl->name, pref);
 }
 void process_fpdecl(NodeFPDecl* fpdecl, program_state global_state) {
 	if (fpdecl == NULL)
