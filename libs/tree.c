@@ -19,7 +19,11 @@ int get_num_arguments(NodeArguments* args) {
 int get_num_params(NodeParams* params) {
 	int i = 0;
 	while (params) {
-		i++;
+		NodeVariables* variable = params->variables;
+		while (variable) {
+			variable = variable->next_variables;
+			i++;
+		}
 		params = params->next_param;
 	}
 	return i;
